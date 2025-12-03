@@ -10,6 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 // === Configuration ===
 var configuration = builder.Configuration;
 
+// Railway använder PORT environment variable
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // === Database Setup ===
 // SQLite för utveckling, PostgreSQL för produktion
 var connectionString = configuration.GetConnectionString("DefaultConnection") 
