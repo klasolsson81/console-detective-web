@@ -131,9 +131,7 @@ const InterrogationPage = () => {
               {t('interrogation.title')} {suspectName}
             </p>
             <p className="text-gray-500 mt-2">
-              {i18n.language === 'sv'
-                ? 'Ställ din första fråga...'
-                : 'Ask your first question...'}
+              Ställ din första fråga...
             </p>
           </div>
         ) : (

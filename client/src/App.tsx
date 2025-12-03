@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ReactNode } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -11,7 +12,7 @@ function App() {
   const { isAuthenticated, isGuest } = useAuth();
 
   // Helper för protected routes
-  const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const ProtectedRoute = ({ children }: { children: ReactNode }) => {
     if (!isAuthenticated && !isGuest) {
       return <Navigate to="/" replace />;
     }

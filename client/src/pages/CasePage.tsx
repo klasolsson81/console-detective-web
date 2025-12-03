@@ -261,9 +261,7 @@ const CasePage = () => {
                 {t('case.solve')}
               </h2>
               <p className="text-gray-400 text-sm mb-4">
-                {i18n.language === 'sv'
-                  ? 'Är du redo att avslöja sanningen?'
-                  : 'Are you ready to reveal the truth?'}
+                Är du redo att avslöja sanningen?
               </p>
               <button
                 onClick={() => setShowSolveModal(true)}
