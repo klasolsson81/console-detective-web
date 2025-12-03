@@ -1,0 +1,6 @@
+@ConsoleDetective.API_HostAddress = http://localhost:5201
+
+GET {{ConsoleDetective.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

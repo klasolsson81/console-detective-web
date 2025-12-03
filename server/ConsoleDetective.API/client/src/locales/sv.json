@@ -1,0 +1,96 @@
+{
+  "app": {
+    "title": "Console Detective AI",
+    "subtitle": "En noir-detektivupplevelse"
+  },
+  "landing": {
+    "welcome": "Välkommen till",
+    "tagline": "Kliv in i skuggorna. Avslöja sanningen.",
+    "intro": "I de mörka gatorna där hemligheter döljs och lögner frodas, behövs en detektiv med skarphet och mod. Är du redo att lösa mysteriet?",
+    "playAsGuest": "Spela som Gäst",
+    "login": "Logga in",
+    "register": "Registrera",
+    "guestWarning": "Som gäst sparas inte ditt framsteg permanent"
+  },
+  "auth": {
+    "loginTitle": "Logga in",
+    "registerTitle": "Skapa konto",
+    "email": "E-post",
+    "username": "Användarnamn",
+    "password": "Lösenord",
+    "confirmPassword": "Bekräfta lösenord",
+    "loginButton": "Logga in",
+    "registerButton": "Registrera",
+    "noAccount": "Inget konto?",
+    "hasAccount": "Har redan konto?",
+    "forgotPassword": "Glömt lösenord?"
+  },
+  "dashboard": {
+    "welcome": "Välkommen tillbaka, detektiv",
+    "guestWelcome": "Välkommen, gäst",
+    "stats": "Statistik",
+    "cases": "Ärenden",
+    "points": "Poäng",
+    "solved": "Lösta",
+    "active": "Aktiva",
+    "createCase": "Nytt ärende",
+    "continueCase": "Fortsätt",
+    "noCases": "Inga aktiva ärenden. Skapa ett nytt för att börja.",
+    "categories": {
+      "murder": "Mord",
+      "bankRobbery": "Bankrån",
+      "burglary": "Inbrott",
+      "infidelity": "Otrohet"
+    }
+  },
+  "case": {
+    "newCase": "Skapa nytt ärende",
+    "selectCategory": "Välj kategori",
+    "generating": "Genererar ärende...",
+    "details": "Ärendedetaljer",
+    "suspects": "Misstänkta",
+    "clues": "Ledtrådar",
+    "investigate": "Undersök brottsplatsen",
+    "interrogate": "Förhör misstänkt",
+    "solve": "Lös ärendet",
+    "investigating": "Undersöker...",
+    "noCluesYet": "Inga ledtrådar hittade än. Undersök brottsplatsen!",
+    "selectSuspect": "Välj misstänkt att förhöra"
+  },
+  "interrogation": {
+    "title": "Förhör:",
+    "askQuestion": "Ställ en fråga...",
+    "send": "Skicka",
+    "emotionalTones": {
+      "nervous": "Nervös",
+      "defensive": "Defensiv",
+      "evasive": "Undvikande",
+      "tense": "Spänd",
+      "calm": "Lugn",
+      "confident": "Självsäker",
+      "irritated": "Irriterad"
+    },
+    "endInterrogation": "Avsluta förhör"
+  },
+  "solution": {
+    "title": "Vem är skyldig?",
+    "subtitle": "Välj den misstänkte du tror är skyldig baserat på dina ledtrådar och förhör.",
+    "selectGuilty": "Välj skyldig",
+    "submit": "Avslöja sanningen",
+    "correct": "Grattis! Du löste fallet!",
+    "incorrect": "Fel. Den skyldige var",
+    "pointsEarned": "Poäng tjänade",
+    "backToDashboard": "Tillbaka till dashboard"
+  },
+  "common": {
+    "loading": "Laddar...",
+    "error": "Ett fel uppstod",
+    "cancel": "Avbryt",
+    "confirm": "Bekräfta",
+    "back": "Tillbaka",
+    "next": "Nästa",
+    "logout": "Logga ut",
+    "settings": "Inställningar",
+    "language": "Språk"
+  }
+}

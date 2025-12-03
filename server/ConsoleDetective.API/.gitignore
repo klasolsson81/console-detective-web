@@ -1,0 +1,116 @@
+# ================================
+# BACKEND (.NET)
+# ================================
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+## User Secrets
+**/appsettings.Development.json
+
+## Entity Framework Migrations (valfritt - jag rekommenderar att commita migrations)
+# **/Migrations/
+
+# ================================
+# FRONTEND (React/Vite)
+# ================================
+
+## Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+## Build output
+dist/
+dist-ssr/
+*.local
+
+## Environment variables (VIKTIGT!)
+.env
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+## Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ================================
+# OS SPECIFIC
+# ================================
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+
+## Linux
+*~
+
+# ================================
+# LOGS & TEMP
+# ================================
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ================================
+# TESTING
+# ================================
+
+coverage/
+*.lcov
+.nyc_output/
+
+# ================================
+# MISC
+# ================================
+
+## Claude AI cache (om du har det)
+.claude/

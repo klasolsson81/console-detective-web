@@ -1,0 +1,96 @@
+{
+  "app": {
+    "title": "Console Detective AI",
+    "subtitle": "A noir detective experience"
+  },
+  "landing": {
+    "welcome": "Welcome to",
+    "tagline": "Step into the shadows. Reveal the truth.",
+    "intro": "In the dark streets where secrets hide and lies flourish, a detective with wit and courage is needed. Are you ready to solve the mystery?",
+    "playAsGuest": "Play as Guest",
+    "login": "Login",
+    "register": "Register",
+    "guestWarning": "As a guest, your progress will not be saved permanently"
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "registerTitle": "Create Account",
+    "email": "Email",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "loginButton": "Login",
+    "registerButton": "Register",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?",
+    "forgotPassword": "Forgot password?"
+  },
+  "dashboard": {
+    "welcome": "Welcome back, detective",
+    "guestWelcome": "Welcome, guest",
+    "stats": "Statistics",
+    "cases": "Cases",
+    "points": "Points",
+    "solved": "Solved",
+    "active": "Active",
+    "createCase": "New Case",
+    "continueCase": "Continue",
+    "noCases": "No active cases. Create a new one to begin.",
+    "categories": {
+      "murder": "Murder",
+      "bankRobbery": "Bank Robbery",
+      "burglary": "Burglary",
+      "infidelity": "Infidelity"
+    }
+  },
+  "case": {
+    "newCase": "Create New Case",
+    "selectCategory": "Select Category",
+    "generating": "Generating case...",
+    "details": "Case Details",
+    "suspects": "Suspects",
+    "clues": "Clues",
+    "investigate": "Investigate Crime Scene",
+    "interrogate": "Interrogate Suspect",
+    "solve": "Solve Case",
+    "investigating": "Investigating...",
+    "noCluesYet": "No clues found yet. Investigate the crime scene!",
+    "selectSuspect": "Select suspect to interrogate"
+  },
+  "interrogation": {
+    "title": "Interrogation:",
+    "askQuestion": "Ask a question...",
+    "send": "Send",
+    "emotionalTones": {
+      "nervous": "Nervous",
+      "defensive": "Defensive",
+      "evasive": "Evasive",
+      "tense": "Tense",
+      "calm": "Calm",
+      "confident": "Confident",
+      "irritated": "Irritated"
+    },
+    "endInterrogation": "End Interrogation"
+  },
+  "solution": {
+    "title": "Who is guilty?",
+    "subtitle": "Choose the suspect you believe is guilty based on your clues and interrogations.",
+    "selectGuilty": "Select Guilty",
+    "submit": "Reveal the Truth",
+    "correct": "Congratulations! You solved the case!",
+    "incorrect": "Wrong. The guilty one was",
+    "pointsEarned": "Points Earned",
+    "backToDashboard": "Back to Dashboard"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "logout": "Logout",
+    "settings": "Settings",
+    "language": "Language"
+  }
+}

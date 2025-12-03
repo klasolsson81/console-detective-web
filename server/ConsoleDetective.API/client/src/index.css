@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-700;
+  }
+
+  body {
+    @apply bg-noir-darkest text-gray-100 font-detective antialiased;
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(139, 0, 0, 0.05) 0%, transparent 50%);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-noir;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-noir-accent hover:bg-noir-amber text-noir-darkest font-bold py-3 px-6
+           rounded-none transition-all duration-300 uppercase tracking-wider
+           shadow-lg hover:shadow-noir-accent/50 transform hover:-translate-y-0.5;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-noir-accent text-noir-accent hover:bg-noir-accent
+           hover:text-noir-darkest font-bold py-3 px-6 rounded-none
+           transition-all duration-300 uppercase tracking-wider;
+  }
+
+  .btn-ghost {
+    @apply text-gray-400 hover:text-noir-accent border border-gray-700
+           hover:border-noir-accent py-2 px-4 rounded-none transition-all duration-300;
+  }
+
+  .card-noir {
+    @apply bg-noir-darker border border-gray-800 p-6
+           hover:border-noir-accent/50 transition-all duration-300
+           shadow-xl hover:shadow-2xl;
+  }
+
+  .input-noir {
+    @apply bg-noir-dark border border-gray-700 text-gray-100 px-4 py-3
+           focus:border-noir-accent focus:outline-none focus:ring-2
+           focus:ring-noir-accent/20 transition-all duration-300;
+  }
+
+  .text-shadow-noir {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+}
+
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* Typewriter effect */
+.typewriter {
+  overflow: hidden;
+  border-right: 0.15em solid #d4af37;
+  white-space: nowrap;
+  letter-spacing: 0.15em;
+  animation:
+    typing 3.5s steps(40, end),
+    blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #d4af37 }
+}
