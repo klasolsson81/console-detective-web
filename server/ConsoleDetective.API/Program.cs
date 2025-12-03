@@ -51,10 +51,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:5173",  // Vite dev server
-            "http://localhost:3000",  // Alternative React port
-            "https://localhost:5173"
+            "http://localhost:5173",              // Vite dev server
+            "http://localhost:3000",              // Alternative React port
+            "https://localhost:5173",             // HTTPS lokalt
+            "https://*.vercel.app"                // Alla Vercel domäner
         )
+        .SetIsOriginAllowedToAllowWildcardSubdomains()
         .AllowAnyMethod()
         .AllowAnyHeader()
         .AllowCredentials();
@@ -115,15 +117,17 @@ var app = builder.Build();
 // CORS måste vara tidigt i pipelinen
 app.UseCors("AllowFrontend");
 
+// Swagger i ALLA miljöer (även production för testing)
+app.UseSwagger();
+app.UseSwaggerUI(c => 
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Console Detective API v1");
+    c.RoutePrefix = "swagger"; // Tillgänglig på /swagger
+});
+
 // Development-specifik middleware
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c => 
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Console Detective API v1");
-    });
-    
     // Visa detaljerade fel i development
     app.UseDeveloperExceptionPage();
 }
@@ -131,11 +135,12 @@ else
 {
     // Production error handling
     app.UseExceptionHandler("/error");
-    app.UseHsts();
+    // HSTS borttaget för Railway compatibility
 }
 
-// HTTPS Redirection
-app.UseHttpsRedirection();
+// HTTPS Redirection - BORTTAGET för Railway
+// Railway's proxy hanterar HTTPS, applikationen använder HTTP internt
+// app.UseHttpsRedirection();
 
 // Authentication & Authorization
 app.UseAuthentication();
