@@ -26,12 +26,12 @@ const Dashboard = () => {
       const data = await gameAPI.getLeaderboard();
       setLeaderboard(data);
     } catch (err) {
-      console.error(err);
+      console.error("Kunde inte hämta leaderboard:", err);
     }
   };
 
   const handleQuit = () => {
-    if (confirm("Är du säker? Din session avslutas och poängen sparas inte om du inte är klar.")) {
+    if (confirm("Är du säker? Din session avslutas och poängen sparas inte.")) {
       endGame();
       navigate('/');
     }
@@ -71,7 +71,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full overflow-hidden border border-noir-accent">
-                {/* FIX: Tog bort 'suspects/' från sökvägen */}
+                {/* FIX: Rätt sökväg till bilden, utan 'suspects/' */}
                 <img src={`/images/${session.avatar}.png`} alt="Avatar" className="w-full h-full object-cover" />
              </div>
              <div>
@@ -157,7 +157,8 @@ const Dashboard = () => {
                             <div className="flex items-center gap-4">
                                 <span className={`font-bold w-6 text-xl ${idx < 3 ? 'text-noir-accent' : 'text-gray-600'}`}>#{idx + 1}</span>
                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800">
-                                     <img src={`/images/suspects/${entry.avatar}.png`} alt="av" className="w-full h-full object-cover" />
+                                     {/* BILD FIXAD HÄR OCKSÅ */}
+                                     <img src={`/images/${entry.avatar}.png`} alt="av" className="w-full h-full object-cover" />
                                 </div>
                                 <span className="text-gray-200 text-lg">{entry.playerName}</span>
                             </div>
@@ -169,7 +170,7 @@ const Dashboard = () => {
 
           </motion.div>
         ) : (
-            // ACTIVE CASES GRID
+            // ACTIVE CASES
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                     <h2 className="text-3xl font-noir text-gray-100 mb-6">Aktiva Fall</h2>

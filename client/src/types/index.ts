@@ -58,11 +58,11 @@ export interface AuthContextType {
 }
 
 export interface LeaderboardEntry {
-  id: string;
+  id?: string; // Gjorde denna valfri då backend ibland skickar utan ID vid submit
   playerName: string;
-  avatar: 'man' | 'woman';
+  avatar: string; // Ändrat till string för att vara mer förlåtande mot backend-data
   score: number;
-  completedAt: string;
+  completedAt?: string;
 }
 
 export interface GameSession {

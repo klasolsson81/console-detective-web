@@ -12,13 +12,12 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    // Rensa gammalt skräp
-    if (localStorage.getItem('gameSession')) {
-      localStorage.removeItem('gameSession');
-    }
+    // 1. Rensa ALLTID localStorage för att undvika "zombie-data"
+    localStorage.removeItem('gameSession');
 
+    // 2. Läs från sessionStorage
     const saved = sessionStorage.getItem('gameSession');
-    // FIX: Lägg till "as GameSession" för att lösa TypeScript-felet
+    // FIX: "as GameSession" tystar TypeScript-felet vid inläsning
     return saved ? (JSON.parse(saved) as GameSession) : null;
   });
 
@@ -62,12 +61,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         return c;
       });
 
-      const newScore = prev.score + pointsEarned;
-
       return {
         ...prev,
         cases: updatedCases,
-        score: newScore
+        score: prev.score + pointsEarned
       };
     });
   };
