@@ -24,27 +24,26 @@ namespace ConsoleDetective.API.Controllers
         [HttpPost("start-session")]
         public async Task<ActionResult> StartSession()
         {
-            // Skapa ett unikt ID för frontend-sessionen (chatt, state, etc)
             var sessionId = Guid.NewGuid().ToString();
-            
             var categories = new[] { "Mord", "Bankrån", "Inbrott", "Otrohet" };
 
-            // === FIXEN ÄR HÄR ===
-            // Vi anger "guest-user" som userId.
-            // Då kopplas alla nya fall till vår statiska gäst-användare i databasen.
-            var tasks = categories.Select(async category => 
-            {
-                var generatedData = await _aiService.GenerateCaseAsync(category);
-                return await _caseService.CreateCaseAsync("guest-user", generatedData);
-            });
-            // ====================
+            // STEG 1: Generera all data parallellt (Snabbt, använder inte databasen)
+            var generationTasks = categories.Select(category => _aiService.GenerateCaseAsync(category));
+            var generatedDataList = await Task.WhenAll(generationTasks);
 
-            var cases = await Task.WhenAll(tasks);
+            // STEG 2: Spara till databasen sekventiellt (Säkert, en i taget)
+            // Detta förhindrar kraschen "Parallel operations on DbContext"
+            var savedCases = new List<Case>();
+            foreach (var data in generatedDataList)
+            {
+                var newCase = await _caseService.CreateCaseAsync("guest-user", data);
+                savedCases.Add(newCase);
+            }
 
             return Ok(new 
             { 
                 sessionId, 
-                cases = cases.Select(c => new { 
+                cases = savedCases.Select(c => new { 
                     c.Id, 
                     c.Title, 
                     c.Category, 

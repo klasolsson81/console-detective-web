@@ -12,18 +12,17 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    // 1. STÄDPATRULL: Rensa gammalt skräp från localStorage om det finns
+    // Rensa gammalt skräp
     if (localStorage.getItem('gameSession')) {
       localStorage.removeItem('gameSession');
     }
 
-    // 2. Använd sessionStorage istället (rensas när fliken stängs)
     const saved = sessionStorage.getItem('gameSession');
-    return saved ? JSON.parse(saved) : null;
+    // FIX: Lägg till "as GameSession" för att lösa TypeScript-felet
+    return saved ? (JSON.parse(saved) as GameSession) : null;
   });
 
   useEffect(() => {
-    // Spara till sessionStorage vid ändringar (överlever F5, men inte omstart av webbläsare)
     if (session) {
       sessionStorage.setItem('gameSession', JSON.stringify(session));
     } else {
@@ -49,7 +48,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const endGame = () => {
     setSession(null);
-    sessionStorage.removeItem('gameSession'); // Rensa sessionen helt
+    sessionStorage.removeItem('gameSession');
   };
 
   const markCaseCompleted = (caseId: string, isSolved: boolean, pointsEarned: number) => {
