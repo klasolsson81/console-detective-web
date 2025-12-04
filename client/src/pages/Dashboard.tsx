@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
 import { LeaderboardEntry } from '../types';
-import { Eye, Trophy, LogOut, Skull, Briefcase, Home, Heart, Star, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, Trophy, LogOut, Skull, Briefcase, Home, Heart, Star, CheckCircle } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [submittingScore, setSubmittingScore] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!session) {
@@ -39,13 +40,24 @@ const Dashboard = () => {
 
   const handleSubmitFinalScore = async () => {
     if (!session || submittingScore) return;
+    
     setSubmittingScore(true);
+    setErrorMsg('');
+
     try {
-      await gameAPI.submitScore(session.playerName, session.avatar, session.score);
+      // SÄKERHETSKOLL: Se till att vi har giltig data innan vi skickar
+      const safeAvatar = session.avatar || 'man';
+      const safeName = session.playerName || 'Okänd Detektiv';
+      const safeScore = session.score || 0;
+
+      await gameAPI.submitScore(safeName, safeAvatar, safeScore);
+      
       setScoreSubmitted(true);
-      await loadLeaderboard();
+      await loadLeaderboard(); // Uppdatera listan direkt så man ser sig själv
+
     } catch (error) {
       console.error("Kunde inte spara poäng", error);
+      setErrorMsg('Kunde inte spara till topplistan. Försök igen.');
     } finally {
       setSubmittingScore(false);
     }
@@ -73,7 +85,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full overflow-hidden border border-noir-accent">
-                <img src={`/images/${session.avatar}.png`} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={`/images/${session.avatar || 'man'}.png`} alt="Avatar" className="w-full h-full object-cover" />
              </div>
              <div>
                 <p className="text-gray-400 text-xs uppercase tracking-widest">Detektiv</p>
@@ -95,7 +107,7 @@ const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         
-        {/* === SPELET ÄR SLUT (SUMMARY SCREEN) === */}
+        {/* === SLUTSKÄRM === */}
         {allCompleted ? (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-4xl mx-auto text-center">
             <div className="card-noir p-12 mb-8 border-2 border-noir-accent">
@@ -118,27 +130,46 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                {errorMsg && <p className="text-red-400 mb-4">{errorMsg}</p>}
+
                 {!scoreSubmitted ? (
-                    <button onClick={handleSubmitFinalScore} disabled={submittingScore} className="btn-primary w-full max-w-md mx-auto text-xl py-4">{submittingScore ? 'Sparar...' : 'SPARA TILL TOPPLISTAN'}</button>
+                    <button onClick={handleSubmitFinalScore} disabled={submittingScore} className="btn-primary w-full max-w-md mx-auto text-xl py-4">
+                        {submittingScore ? 'Sparar...' : 'SPARA TILL TOPPLISTAN'}
+                    </button>
                 ) : (
-                    <button onClick={() => { endGame(); navigate('/'); }} className="btn-secondary w-full max-w-md mx-auto">TILLBAKA TILL STARTSIDAN</button>
+                    <button onClick={() => { endGame(); navigate('/'); }} className="btn-secondary w-full max-w-md mx-auto">
+                        TILLBAKA TILL STARTSIDAN
+                    </button>
                 )}
             </div>
-            {/* Topplista här om man vill */}
+            
+            {/* Visa topplistan även på slutskärmen */}
+            <div className="card-noir p-8 max-w-2xl mx-auto mt-8">
+                <h3 className="text-2xl font-noir text-white mb-6 flex items-center justify-center gap-2"><Trophy className="text-noir-accent"/> Topplista</h3>
+                <div className="space-y-3">
+                    {leaderboard.map((entry, idx) => (
+                         <div key={idx} className={`flex items-center justify-between p-3 rounded ${entry.playerName === session.playerName && scoreSubmitted ? 'bg-noir-accent/20 border border-noir-accent' : 'border-b border-gray-800'}`}>
+                            <div className="flex items-center gap-4">
+                                <span className={`font-bold w-6 text-xl ${idx < 3 ? 'text-noir-accent' : 'text-gray-600'}`}>#{idx + 1}</span>
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800">
+                                     <img src={`/images/${entry.avatar || 'man'}.png`} alt="av" className="w-full h-full object-cover" />
+                                </div>
+                                <span className="text-gray-200 text-lg">{entry.playerName}</span>
+                            </div>
+                            <span className="font-noir text-noir-accent text-xl">{entry.score}p</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
           </motion.div>
         ) : (
             // === SPELET PÅGÅR ===
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-10">
-                    
-                    {/* AKTIVA FALL */}
                     <div>
-                        <h2 className="text-3xl font-noir text-gray-100 mb-6 flex items-center gap-3">
-                            <Briefcase className="text-noir-accent" /> Pågående Utredningar
-                        </h2>
-                        {activeCases.length === 0 ? (
-                             <p className="text-gray-500 italic">Inga aktiva fall.</p>
-                        ) : (
+                        <h2 className="text-3xl font-noir text-gray-100 mb-6 flex items-center gap-3"><Briefcase className="text-noir-accent" /> Pågående Utredningar</h2>
+                        {activeCases.length === 0 ? <p className="text-gray-500 italic">Inga aktiva fall.</p> : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {activeCases.map((c, idx) => {
                                     const Icon = getIcon(c.category);
@@ -158,12 +189,9 @@ const Dashboard = () => {
                         )}
                     </div>
 
-                    {/* AVSLUTADE FALL */}
                     {completedCases.length > 0 && (
                         <div>
-                            <h2 className="text-2xl font-noir text-gray-400 mb-6 flex items-center gap-3">
-                                <CheckCircle className="text-gray-600" /> Avslutade Fall
-                            </h2>
+                            <h2 className="text-2xl font-noir text-gray-400 mb-6 flex items-center gap-3"><CheckCircle className="text-gray-600" /> Avslutade Fall</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {completedCases.map((c) => {
                                     const Icon = getIcon(c.category);
@@ -184,7 +212,6 @@ const Dashboard = () => {
                     )}
                 </div>
 
-                {/* Sidebar */}
                 <div className="space-y-8">
                     <div className="card-noir p-6">
                         <h3 className="text-xl font-noir text-noir-accent mb-4 flex items-center gap-2"><Trophy size={20} /> Topplista</h3>
