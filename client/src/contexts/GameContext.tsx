@@ -12,15 +12,22 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    const saved = localStorage.getItem('gameSession');
+    // 1. STÄDPATRULL: Rensa gammalt skräp från localStorage om det finns
+    if (localStorage.getItem('gameSession')) {
+      localStorage.removeItem('gameSession');
+    }
+
+    // 2. Använd sessionStorage istället (rensas när fliken stängs)
+    const saved = sessionStorage.getItem('gameSession');
     return saved ? JSON.parse(saved) : null;
   });
 
   useEffect(() => {
+    // Spara till sessionStorage vid ändringar (överlever F5, men inte omstart av webbläsare)
     if (session) {
-      localStorage.setItem('gameSession', JSON.stringify(session));
+      sessionStorage.setItem('gameSession', JSON.stringify(session));
     } else {
-      localStorage.removeItem('gameSession');
+      sessionStorage.removeItem('gameSession');
     }
   }, [session]);
 
@@ -35,13 +42,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         isCompleted: false,
         isSolved: false
       })),
-      activeCaseIndex: null // <-- HÄR VAR DEN SAKNADE RADEN!
+      activeCaseIndex: null
     };
     setSession(newSession);
   };
 
   const endGame = () => {
     setSession(null);
+    sessionStorage.removeItem('gameSession'); // Rensa sessionen helt
   };
 
   const markCaseCompleted = (caseId: string, isSolved: boolean, pointsEarned: number) => {
