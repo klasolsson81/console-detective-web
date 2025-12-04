@@ -1,11 +1,10 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { GameSession } from '../types';
 
 interface GameContextType {
   session: GameSession | null;
-  startGame: (playerName: string, avatar: string, sessionData: any) => void;
+  startGame: (playerName: string, avatar: 'man' | 'woman', sessionData: any) => void;
   endGame: () => void;
-  // NY FUNKTION: Uppdaterar ett fall som löst
   markCaseCompleted: (caseId: string, isSolved: boolean, pointsEarned: number) => void;
 }
 
@@ -13,12 +12,10 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    // Försök hämta sparad session från localStorage vid start
     const saved = localStorage.getItem('gameSession');
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Spara till localStorage varje gång session ändras
   useEffect(() => {
     if (session) {
       localStorage.setItem('gameSession', JSON.stringify(session));
@@ -27,17 +24,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session]);
 
-  const startGame = (playerName: string, avatar: string, sessionData: any) => {
+  const startGame = (playerName: string, avatar: 'man' | 'woman', sessionData: any) => {
     const newSession: GameSession = {
       sessionId: sessionData.sessionId,
       playerName,
-      avatar,
+      avatar, 
       score: 0,
       cases: sessionData.cases.map((c: any) => ({
         ...c,
-        isCompleted: false, // Säkerställ att vi börjar på noll
+        isCompleted: false,
         isSolved: false
-      }))
+      })),
+      activeCaseIndex: null // <-- HÄR VAR DEN SAKNADE RADEN!
     };
     setSession(newSession);
   };
@@ -46,12 +44,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
   };
 
-  // === HÄR ÄR MAGIN SOM SAKNADES ===
   const markCaseCompleted = (caseId: string, isSolved: boolean, pointsEarned: number) => {
     setSession((prev) => {
       if (!prev) return null;
 
-      // 1. Uppdatera listan med fall
       const updatedCases = prev.cases.map((c) => {
         if (c.id === caseId) {
           return { ...c, isCompleted: true, isSolved: isSolved };
@@ -59,7 +55,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         return c;
       });
 
-      // 2. Uppdatera totalpoängen
       const newScore = prev.score + pointsEarned;
 
       return {
