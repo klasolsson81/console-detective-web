@@ -57,4 +57,21 @@ export interface AuthContextType {
   playAsGuest: () => void;
 }
 
+export interface LeaderboardEntry {
+  id: string;
+  playerName: string;
+  avatar: 'man' | 'woman';
+  score: number;
+  completedAt: string;
+}
+
+export interface GameSession {
+  sessionId: string;
+  playerName: string;
+  avatar: 'man' | 'woman';
+  score: number;
+  cases: Case[];
+  activeCaseIndex: number | null;
+}
+
 export type CaseCategory = 'Mord' | 'Bankrån' | 'Inbrott' | 'Otrohet';

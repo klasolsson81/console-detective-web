@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/GameContext';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import CasePage from './pages/CasePage';

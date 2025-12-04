@@ -2,16 +2,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
-import { AuthProvider } from './contexts/AuthContext.tsx';
+import { GameProvider } from './contexts/GameContext'; // <-- Ändrad import
 import './i18n.ts';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
+      {/* Vi använder nu GameProvider istället för AuthProvider */}
+      <GameProvider>
         <App />
-      </AuthProvider>
+      </GameProvider>
     </BrowserRouter>
   </StrictMode>,
 );

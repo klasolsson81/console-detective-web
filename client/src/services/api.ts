@@ -38,32 +38,23 @@ export const isGuestMode = (): boolean => {
   return localStorage.getItem('playMode') === 'guest';
 };
 
-// === AUTH ENDPOINTS ===
-export const authAPI = {
-  register: async (username: string, email: string, password: string) => {
-    const response = await api.post('/auth/register', { username, email, password });
+export const gameAPI = {
+  startSession: async () => {
+    const response = await api.post('/game/start-session');
+    return response.data; // Returnerar { sessionId, cases: [] }
+  },
+
+  getLeaderboard: async () => {
+    const response = await api.get('/game/leaderboard');
     return response.data;
   },
 
-  login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
-    if (response.data.token) {
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('playMode', 'user');
-    }
+  submitScore: async (playerName: string, avatar: string, score: number) => {
+    const response = await api.post('/game/leaderboard', { playerName, avatar, score });
     return response.data;
-  },
-
-  logout: () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('playMode');
-    localStorage.removeItem('guestCases'); // Rensa guest data
-  },
-
-  setGuestMode: () => {
-    localStorage.setItem('playMode', 'guest');
-  },
+  }
 };
+
 
 // === CASE ENDPOINTS ===
 export const caseAPI = {

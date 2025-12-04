@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/GameContext';
 import { Eye, Languages } from 'lucide-react';
 
 const LandingPage = () => {

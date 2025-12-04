@@ -1,336 +1,202 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
-import { caseAPI } from '../services/api';
-import { Case } from '../types';
-import {
-  Eye,
-  Plus,
-  Trophy,
-  FolderOpen,
-  Target,
-  LogOut,
-  Languages,
-  Skull,
-  Briefcase,
-  Home,
-  Heart
-} from 'lucide-react';
+import { useGame } from '../contexts/GameContext'; // Uppdaterad
+import { gameAPI } from '../services/api';
+import { LeaderboardEntry } from '../types';
+import { Eye, Trophy, LogOut, Skull, Briefcase, Home, Heart, Lock } from 'lucide-react';
 
 const Dashboard = () => {
-  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, isGuest, logout } = useAuth();
-
-  const [cases, setCases] = useState<Case[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showNewCaseModal, setShowNewCaseModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [creatingCase, setCreatingCase] = useState(false);
-
-  const categories = [
-    { key: 'Mord', icon: Skull, color: 'text-noir-blood' },
-    { key: 'Bankrån', icon: Briefcase, color: 'text-noir-amber' },
-    { key: 'Inbrott', icon: Home, color: 'text-gray-400' },
-    { key: 'Otrohet', icon: Heart, color: 'text-pink-400' },
-  ];
+  const { session, endGame } = useGame();
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [submittingScore, setSubmittingScore] = useState(false);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
 
   useEffect(() => {
-    loadCases();
-  }, []);
+    if (!session) {
+      navigate('/');
+      return;
+    }
+    loadLeaderboard();
+  }, [session, navigate]);
 
-  const loadCases = async () => {
+  const loadLeaderboard = async () => {
     try {
-      const data = await caseAPI.getMyCases();
-      setCases(data);
+      const data = await gameAPI.getLeaderboard();
+      setLeaderboard(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleQuit = () => {
+    if (confirm("Är du säker? Din session avslutas och poängen sparas inte om du inte är klar.")) {
+      endGame();
+      navigate('/');
+    }
+  };
+
+  const handleSubmitFinalScore = async () => {
+    if (!session || submittingScore) return;
+    setSubmittingScore(true);
+    try {
+      await gameAPI.submitScore(session.playerName, session.avatar, session.score);
+      setScoreSubmitted(true);
+      await loadLeaderboard(); // Hämta ny lista
     } catch (error) {
-      console.error('Failed to load cases:', error);
+      console.error("Kunde inte spara poäng", error);
     } finally {
-      setLoading(false);
+      setSubmittingScore(false);
     }
   };
 
-  const handleCreateCase = async () => {
-    if (!selectedCategory) return;
+  if (!session) return null;
 
-    setCreatingCase(true);
-    // Vi stänger inte modalen här, utan låter overlayen ta över
-    
-    try {
-      const newCase = await caseAPI.createCase(selectedCategory);
-      navigate(`/case/${newCase.id}`);
-    } catch (error) {
-      console.error('Failed to create case:', error);
-      setCreatingCase(false); // Stoppa laddningen om det blir fel
-      alert("Något gick fel vid skapandet av fallet. Försök igen.");
+  const allCompleted = session.cases.every(c => c.isCompleted);
+  
+  const getIcon = (category: string) => {
+    switch (category) {
+        case 'Mord': return Skull;
+        case 'Bankrån': return Briefcase;
+        case 'Inbrott': return Home;
+        case 'Otrohet': return Heart;
+        default: return Eye;
     }
-    // Vi sätter inte setCreatingCase(false) i success-fallet 
-    // eftersom vi navigerar bort direkt.
   };
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'sv' ? 'en' : 'sv';
-    i18n.changeLanguage(newLang);
-  };
-
-  const activeCases = cases.filter(c => !c.isCompleted);
-  const solvedCases = cases.filter(c => c.isCompleted && c.isSolved);
-  const totalPoints = isGuest ? 0 : (user?.points || 0);
 
   return (
-    <div className="min-h-screen bg-noir-darkest relative">
+    <div className="min-h-screen bg-noir-darkest pb-12">
       {/* Header */}
-      <header className="bg-noir-darker border-b border-gray-800 sticky top-0 z-40 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          {/* Logo */}
+      <header className="bg-noir-darker border-b border-gray-800 sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Eye className="text-noir-accent" size={32} />
-            <h1 className="text-2xl font-noir text-noir-accent">Console Detective</h1>
+             {/* Spelarens Avatar */}
+             <div className="w-10 h-10 rounded-full overflow-hidden border border-noir-accent">
+                <img src={`/images/suspects/${session.avatar}.png`} alt="Avatar" className="w-full h-full object-cover" />
+             </div>
+             <div>
+                <p className="text-gray-400 text-xs uppercase tracking-widest">Detektiv</p>
+                <p className="text-noir-accent font-noir">{session.playerName}</p>
+             </div>
           </div>
-
-          {/* User Info & Actions */}
-          <div className="flex items-center gap-4">
-            {/* Language */}
-            <button
-              onClick={toggleLanguage}
-              className="btn-ghost flex items-center gap-2"
-            >
-              <Languages size={18} />
-              {i18n.language === 'sv' ? '🇸🇪' : '🇬🇧'}
-            </button>
-
-            {/* User/Guest Badge */}
-            {isGuest ? (
-              <div className="px-4 py-2 bg-noir-dark border border-gray-700 rounded text-gray-400">
-                🎭 {t('dashboard.guestWelcome')}
-              </div>
-            ) : (
-              <div className="px-4 py-2 bg-noir-dark border border-noir-accent/50 rounded text-noir-accent">
-                {user?.username || 'Detective'}
-              </div>
-            )}
-
-            {/* Logout */}
-            <button
-              onClick={logout}
-              className="btn-ghost flex items-center gap-2 text-red-400 hover:text-red-300"
-            >
-              <LogOut size={18} />
-              {t('common.logout')}
+          
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+                <p className="text-gray-400 text-xs uppercase tracking-widest">Nuvarande Poäng</p>
+                <p className="text-2xl font-noir text-gray-100">{session.score}</p>
+            </div>
+            <button onClick={handleQuit} className="text-red-400 hover:text-red-300">
+                <LogOut size={20} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12 text-center"
-        >
-          <h2 className="text-5xl font-noir text-gray-100 mb-4">
-            {isGuest ? t('dashboard.guestWelcome') : t('dashboard.welcome')}
-          </h2>
-          <p className="text-xl text-gray-400 font-detective">
-            {i18n.language === 'sv'
-              ? 'Mörkret väntar. Vilken sanning kommer du avslöja idag?'
-              : 'Darkness awaits. What truth will you reveal today?'}
-          </p>
-        </motion.div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="card-noir p-6 flex items-center gap-4"
-          >
-            <Trophy className="text-noir-accent" size={40} />
-            <div>
-              <p className="text-gray-400 text-sm">{t('dashboard.points')}</p>
-              <p className="text-3xl font-noir text-gray-100">{totalPoints}</p>
+      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Main Column: Cases */}
+        <div className="lg:col-span-2 space-y-6">
+            <h2 className="text-3xl font-noir text-gray-100 mb-6">Aktiva Fall</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {session.cases.map((c, idx) => {
+                    const Icon = getIcon(c.category);
+                    return (
+                        <motion.div 
+                            key={c.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            onClick={() => !c.isCompleted && navigate(`/case/${c.id}`)}
+                            className={`p-6 border border-gray-800 bg-noir-darker relative overflow-hidden group transition-all ${c.isCompleted ? 'opacity-70 grayscale' : 'hover:border-noir-accent cursor-pointer'}`}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <Icon className={`w-8 h-8 ${c.isCompleted ? 'text-gray-600' : 'text-noir-accent'}`} />
+                                {c.isCompleted && (
+                                    <span className={`px-2 py-1 text-xs font-bold rounded ${c.isSolved ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
+                                        {c.isSolved ? 'LÖST' : 'MISSLYCKAT'}
+                                    </span>
+                                )}
+                            </div>
+                            <h3 className="text-xl font-noir text-gray-100 mb-2">{c.title}</h3>
+                            <p className="text-sm text-gray-500 line-clamp-2">{c.description}</p>
+                            
+                            {!c.isCompleted && (
+                                <div className="absolute bottom-0 left-0 w-full h-1 bg-noir-accent transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                            )}
+                        </motion.div>
+                    );
+                })}
             </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="card-noir p-6 flex items-center gap-4"
-          >
-            <Target className="text-green-400" size={40} />
-            <div>
-              <p className="text-gray-400 text-sm">{t('dashboard.solved')}</p>
-              <p className="text-3xl font-noir text-gray-100">{solvedCases.length}</p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="card-noir p-6 flex items-center gap-4"
-          >
-            <FolderOpen className="text-blue-400" size={40} />
-            <div>
-              <p className="text-gray-400 text-sm">{t('dashboard.active')}</p>
-              <p className="text-3xl font-noir text-gray-100">{activeCases.length}</p>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Create New Case Button */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mb-8"
-        >
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowNewCaseModal(true)}
-            className="btn-primary flex items-center gap-2 mx-auto text-lg"
-          >
-            <Plus size={24} />
-            {t('dashboard.createCase')}
-          </motion.button>
-        </motion.div>
-
-        {/* Cases Grid */}
-        {loading ? (
-          <div className="text-center text-gray-400 py-12">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-noir-accent mx-auto mb-4"></div>
-            {t('common.loading')}
-          </div>
-        ) : cases.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16"
-          >
-            <FolderOpen className="text-gray-600 mx-auto mb-4" size={64} />
-            <p className="text-gray-400 text-lg">{t('dashboard.noCases')}</p>
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cases.map((caseItem, index) => (
-              <motion.div
-                key={caseItem.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + index * 0.1 }}
-                whileHover={{ y: -5 }}
-                onClick={() => navigate(`/case/${caseItem.id}`)}
-                className="card-noir p-6 cursor-pointer group"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-noir text-gray-100 group-hover:text-noir-accent transition-colors">
-                    {caseItem.title}
-                  </h3>
-                  {caseItem.isCompleted && (
-                    <span className={`px-2 py-1 text-xs ${caseItem.isSolved ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'} rounded`}>
-                      {caseItem.isSolved ? '✓' : '✗'}
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-gray-400 text-sm mb-4 line-clamp-3">{caseItem.description}</p>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-noir-accent">{caseItem.category}</span>
-                  <span className="text-gray-500">{caseItem.location}</span>
-                </div>
-
-                {!caseItem.isCompleted && (
-                  <button className="btn-secondary w-full mt-4">
-                    {t('dashboard.continueCase')} →
-                  </button>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* New Case Modal */}
-      {showNewCaseModal && !creatingCase && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="card-noir p-8 max-w-2xl w-full"
-          >
-            <h2 className="text-3xl font-noir text-noir-accent mb-6 text-center">
-              {t('case.newCase')}
-            </h2>
-            <p className="text-gray-400 text-center mb-8">{t('case.selectCategory')}</p>
-
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {categories.map(({ key, icon: Icon, color }) => (
-                <motion.button
-                  key={key}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedCategory(key)}
-                  className={`p-6 border-2 rounded transition-all ${
-                    selectedCategory === key
-                      ? 'border-noir-accent bg-noir-accent/10'
-                      : 'border-gray-700 hover:border-gray-600'
-                  }`}
+            {allCompleted && !scoreSubmitted && (
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="mt-8 p-8 bg-noir-accent/10 border border-noir-accent text-center"
                 >
-                  <Icon className={`mx-auto mb-3 ${color}`} size={40} />
-                  <p className="text-gray-100 font-noir text-lg">{key}</p>
-                </motion.button>
-              ))}
+                    <h3 className="text-3xl font-noir text-noir-accent mb-2">Utredning Avslutad</h3>
+                    <p className="text-gray-300 mb-6">Slutpoäng: <span className="text-white font-bold text-xl">{session.score}</span></p>
+                    <button 
+                        onClick={handleSubmitFinalScore}
+                        disabled={submittingScore}
+                        className="btn-primary w-full max-w-md mx-auto"
+                    >
+                        {submittingScore ? 'Sparar...' : 'SPARA TILL TOPPLISTAN & AVSLUTA'}
+                    </button>
+                </motion.div>
+            )}
+             {allCompleted && scoreSubmitted && (
+                <div className="mt-8 text-center">
+                     <p className="text-green-400 mb-4">Poäng sparad!</p>
+                     <button onClick={() => { endGame(); navigate('/'); }} className="btn-secondary">
+                        TILLBAKA TILL START
+                     </button>
+                </div>
+            )}
+        </div>
+
+        {/* Sidebar: Leaderboard & Rules */}
+        <div className="space-y-8">
+            <div className="card-noir p-6">
+                <h3 className="text-xl font-noir text-noir-accent mb-4 flex items-center gap-2">
+                    <Trophy size={20} /> Topplista
+                </h3>
+                <div className="space-y-3">
+                    {leaderboard.length === 0 ? (
+                        <p className="text-gray-500 text-sm italic">Inga resultat än...</p>
+                    ) : (
+                        leaderboard.map((entry, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-sm border-b border-gray-800 pb-2">
+                                <div className="flex items-center gap-3">
+                                    <span className={`font-bold w-6 ${idx < 3 ? 'text-noir-accent' : 'text-gray-600'}`}>#{idx + 1}</span>
+                                    <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-800">
+                                         <img src={`/images/suspects/${entry.avatar}.png`} alt="av" className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="text-gray-300">{entry.playerName}</span>
+                                </div>
+                                <span className="font-noir text-noir-accent">{entry.score}</span>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
 
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowNewCaseModal(false)}
-                className="btn-ghost flex-1"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={handleCreateCase}
-                disabled={!selectedCategory}
-                className="btn-primary flex-1"
-              >
-                {t('common.confirm')}
-              </button>
+            <div className="bg-noir-dark p-6 border border-gray-800 text-sm text-gray-400">
+                <h4 className="text-gray-200 font-bold mb-2 uppercase tracking-wider">Regler</h4>
+                <ul className="space-y-2 list-disc pl-4">
+                    <li>Du har 4 fall att lösa.</li>
+                    <li>Rätt gissning: <span className="text-green-400">+100p</span></li>
+                    <li>Fel gissning: <span className="text-red-400">-50p</span></li>
+                    <li>Undersökning: <span className="text-yellow-500">-10p</span></li>
+                    <li>Förhörsfråga: <span className="text-yellow-500">-5p</span></li>
+                    <li>Maximal poäng: 400p</li>
+                </ul>
             </div>
-          </motion.div>
         </div>
-      )}
 
-      {/* --- LOADING OVERLAY --- 
-          Detta visas när creatingCase är true, och täcker hela skärmen 
-      */}
-      {creatingCase && (
-        <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-md">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center"
-          >
-            <div className="w-20 h-20 border-4 border-noir-accent border-t-transparent rounded-full animate-spin mx-auto mb-8 shadow-lg shadow-noir-accent/20"></div>
-            <h2 className="text-4xl font-noir text-noir-accent mb-4 animate-pulse">
-              {t('case.generating')}...
-            </h2>
-            <p className="text-gray-400 font-detective max-w-md mx-auto text-lg leading-relaxed">
-              AI-detektiven samlar bevis, intervjuar vittnen och säkrar brottsplatsen.
-              <br/>
-              <span className="text-sm text-gray-600 mt-2 block">(Detta kan ta några sekunder)</span>
-            </p>
-          </motion.div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

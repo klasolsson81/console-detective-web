@@ -15,6 +15,7 @@ namespace ConsoleDetective.API.Data
         public DbSet<Clue> Clues { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<InterrogationSession> InterrogationSessions { get; set; }
+        public DbSet<LeaderboardEntry> Leaderboard { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
