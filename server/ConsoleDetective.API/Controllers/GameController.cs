@@ -83,23 +83,23 @@ namespace ConsoleDetective.API.Controllers
             }
         }
 
-        // === HÄR ÄR FIXEN FÖR ATT SPARA TILL TOPPLISTAN ===
+        // === FIXED: SubmitScore now handles missing ID and Date ===
         [HttpPost("leaderboard")]
         public async Task<ActionResult> SubmitScore([FromBody] LeaderboardEntry entry)
         {
-            // 1. Säkra upp ID (om det saknas, skapa nytt)
+            // 1. Ensure ID exists (create new if missing)
             if (entry.Id == Guid.Empty) 
             {
                 entry.Id = Guid.NewGuid();
             }
 
-            // 2. Säkra upp Datum (Postgres kraschar av "år 0001")
+            // 2. Ensure Date exists (Postgres crashes on "year 0001")
             if (entry.CompletedAt == default)
             {
                 entry.CompletedAt = DateTime.UtcNow;
             }
 
-            // 3. Säkra upp Avatar och Namn
+            // 3. Ensure Avatar and Name exist
             if (string.IsNullOrEmpty(entry.Avatar)) entry.Avatar = "man";
             if (string.IsNullOrEmpty(entry.PlayerName)) entry.PlayerName = "Okänd";
             
