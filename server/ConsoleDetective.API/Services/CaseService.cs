@@ -9,21 +9,74 @@ namespace ConsoleDetective.API.Services
         private readonly AppDbContext _context;
         private readonly AIService _aiService;
 
+        // Ett statiskt ID för alla gästspelare
+        private readonly Guid _guestUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
         public CaseService(AppDbContext context, AIService aiService)
         {
             _context = context;
             _aiService = aiService;
         }
 
-        // Helper method to convert userId string to Guid (handles guest users)
         private Guid ParseUserId(string userId)
         {
             if (userId == "guest-user")
             {
-                // Special GUID for guest users
-                return Guid.Parse("00000000-0000-0000-0000-000000000001");
+                return _guestUserId;
             }
             return Guid.Parse(userId);
+        }
+
+        // ==================== SKAPA NYTT FALL (MED FIX) ====================
+        public async Task<Case> CreateCaseAsync(string userId, GeneratedCaseData generatedData)
+        {
+            var userGuid = ParseUserId(userId);
+            
+            // --- FIX FÖR ATT UNDVIKA KRASCH ---
+            if (userId == "guest-user")
+            {
+                var guestExists = await _context.Users.AnyAsync(u => u.Id == userGuid);
+                if (!guestExists)
+                {
+                    // Skapa gäst-användaren om den saknas
+                    var guestUser = new User
+                    {
+                        Id = userGuid,
+                        Username = "Gäst Detektiv",
+                        Points = 0,
+                        PasswordHash = "guest-mode", 
+                        Email = "guest@consoledetective.se" 
+                    };
+                    _context.Users.Add(guestUser);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            // ----------------------------------
+
+            var newCase = new Case
+            {
+                UserId = userGuid,
+                Title = generatedData.Title,
+                Category = generatedData.Category,
+                Description = generatedData.Description,
+                Location = generatedData.Location,
+                PossibleSuspects = generatedData.PossibleSuspects,
+                Guilty = generatedData.Guilty
+            };
+
+            foreach (var clueText in generatedData.InitialClues)
+            {
+                newCase.Clues.Add(new Clue
+                {
+                    Text = clueText,
+                    Type = "Investigation"
+                });
+            }
+
+            _context.Cases.Add(newCase);
+            await _context.SaveChangesAsync();
+
+            return newCase;
         }
 
         // ==================== HÄMTA ANVÄNDARENS FALL ====================
@@ -41,45 +94,21 @@ namespace ConsoleDetective.API.Services
         // ==================== HÄMTA SPECIFIKT FALL ====================
         public async Task<Case?> GetCaseByIdAsync(Guid caseId, string userId)
         {
+            if (userId == "guest-user") 
+            {
+                 return await _context.Cases
+                    .Include(c => c.Clues)
+                    .Include(c => c.InterrogationSessions)
+                        .ThenInclude(s => s.Messages)
+                    .FirstOrDefaultAsync(c => c.Id == caseId);
+            }
+
             var userGuid = ParseUserId(userId);
-            
             return await _context.Cases
                 .Include(c => c.Clues)
                 .Include(c => c.InterrogationSessions)
                     .ThenInclude(s => s.Messages)
                 .FirstOrDefaultAsync(c => c.Id == caseId && c.UserId == userGuid);
-        }
-
-        // ==================== SKAPA NYTT FALL ====================
-        public async Task<Case> CreateCaseAsync(string userId, GeneratedCaseData generatedData)
-        {
-            var userGuid = ParseUserId(userId);
-            
-            var newCase = new Case
-            {
-                UserId = userGuid,
-                Title = generatedData.Title,
-                Category = generatedData.Category,
-                Description = generatedData.Description,
-                Location = generatedData.Location,
-                PossibleSuspects = generatedData.PossibleSuspects,
-                Guilty = generatedData.Guilty
-            };
-
-            // Lägg till initial ledtrådar
-            foreach (var clueText in generatedData.InitialClues)
-            {
-                newCase.Clues.Add(new Clue
-                {
-                    Text = clueText,
-                    Type = "Investigation"
-                });
-            }
-
-            _context.Cases.Add(newCase);
-            await _context.SaveChangesAsync();
-
-            return newCase;
         }
 
         // ==================== LÄGG TILL LEDTRÅD ====================
@@ -98,33 +127,26 @@ namespace ConsoleDetective.API.Services
             return clue;
         }
 
-        // ==================== TILLDELA LEDTRÅD TILL MISSTÄNKT ====================
+        // ==================== TILLDELA LEDTRÅD ====================
         public async Task<bool> AssignClueToSuspectAsync(Guid clueId, string suspectName)
         {
             var clue = await _context.Clues.FindAsync(clueId);
-            
-            if (clue == null)
-                return false;
+            if (clue == null) return false;
 
             clue.AssignedToSuspect = suspectName;
             await _context.SaveChangesAsync();
-
             return true;
         }
 
         // ==================== GÖR ANKLAGELSE ====================
-// ==================== GÖR ANKLAGELSE ====================
-        // Ändrad returtyp för att inkludera namnet på den skyldige
         public async Task<(bool IsCorrect, int PointsChange, string GuiltyParty)> MakeAccusationAsync(
             Guid caseId,
             string userId,
             string accusedSuspect)
         {
-            var userGuid = ParseUserId(userId);
-            
             var caseData = await _context.Cases
                 .Include(c => c.User)
-                .FirstOrDefaultAsync(c => c.Id == caseId && c.UserId == userGuid);
+                .FirstOrDefaultAsync(c => c.Id == caseId);
 
             if (caseData == null)
                 throw new InvalidOperationException("Fall hittades inte");
@@ -132,27 +154,27 @@ namespace ConsoleDetective.API.Services
             if (caseData.IsCompleted)
                 throw new InvalidOperationException("Fallet är redan avslutat");
 
-            // Normalisera namn för jämförelse
             var accusedNorm = accusedSuspect.Trim().TrimEnd('.', '!', '?');
             var guiltyNorm = caseData.Guilty.Trim().TrimEnd('.', '!', '?');
 
             bool isCorrect = string.Equals(accusedNorm, guiltyNorm, StringComparison.OrdinalIgnoreCase);
 
-            // Uppdatera case
             caseData.IsCompleted = true;
             caseData.IsSolved = isCorrect;
 
-            // Beräkna poäng
             int pointsChange = isCorrect ? 100 : -50;
-            caseData.User.Points += pointsChange;
+            
+            if (caseData.User != null)
+            {
+                caseData.User.Points += pointsChange;
+            }
 
             await _context.SaveChangesAsync();
 
-            // Returnera även den skyldiges namn!
             return (isCorrect, pointsChange, caseData.Guilty);
         }
 
-        // ==================== HÄMTA STATISTIK ====================
+        // ==================== STATISTIK ====================
         public async Task<UserStatistics> GetUserStatisticsAsync(string userId)
         {
             var userGuid = ParseUserId(userId);
@@ -174,7 +196,7 @@ namespace ConsoleDetective.API.Services
         }
     }
 
-    // ==================== USER STATISTICS DTO ====================
+    // ==================== HÄR LIGGER KLASSEN SOM SAKNADES ====================
     public class UserStatistics
     {
         public int TotalCases { get; set; }
