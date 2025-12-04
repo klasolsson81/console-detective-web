@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { caseAPI, chatAPI } from '../services/api';
-import { Case, Clue } from '../types';
+import { useGame } from '../contexts/GameContext'; // <-- IMPORTERA CONTEXT
+import { Case } from '../types';
 import {
   ArrowLeft,
   Search,
@@ -16,15 +17,11 @@ import {
 
 // Helper function to get image path with fallback
 const getImagePath = (folder: 'suspects' | 'locations', name: string) => {
-  // SÄKERHETSSPÄRR: Om name är tomt eller undefined, returnera placeholder direkt
   if (!name) return '/images/suspects/unknown.png'; 
-
-  // Normalize name: remove spaces, convert to lowercase
   const normalizedName = name.toLowerCase()
     .replace(/\s+/g, '_')
     .replace(/[åä]/g, 'a')
     .replace(/ö/g, 'o');
-    
   return `/images/${folder}/${normalizedName}.png`;
 };
 
@@ -32,6 +29,9 @@ const CasePage = () => {
   const { t } = useTranslation();
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
+  
+  // Hämta funktionen för att uppdatera poäng
+  const { markCaseCompleted } = useGame(); 
 
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,11 +60,9 @@ const CasePage = () => {
 
   const handleInvestigate = async () => {
     if (!caseId) return;
-
     setInvestigating(true);
     try {
-      const clue = await caseAPI.investigateScene(caseId);
-      // Reload case to get updated clues
+      await caseAPI.investigateScene(caseId);
       await loadCase();
     } catch (error) {
       console.error('Investigation failed:', error);
@@ -75,7 +73,6 @@ const CasePage = () => {
 
   const handleInterrogate = async (suspectName: string) => {
     if (!caseId) return;
-
     try {
       const session = await chatAPI.startInterrogation(caseId, suspectName);
       navigate(`/interrogation/${session.sessionId}`);
@@ -84,19 +81,29 @@ const CasePage = () => {
     }
   };
 
+  // === HÄR ÄR ÄNDRINGEN FÖR POÄNG OCH STATUS ===
   const handleSolveCase = async () => {
     if (!caseId || !selectedSuspect) return;
 
     setSolving(true);
     try {
+      // 1. Anropa API för att rätta
       const solutionResult = await caseAPI.solveCase(caseId, selectedSuspect);
       setResult(solutionResult);
+
+      // 2. VIKTIGT: Uppdatera frontend-staten (poäng och checkbox)
+      // solutionResult ska innehålla: { isCorrect: boolean, pointsAwarded: number, ... }
+      if (solutionResult) {
+          markCaseCompleted(caseId, solutionResult.isCorrect, solutionResult.pointsAwarded);
+      }
+
     } catch (error) {
       console.error('Failed to solve case:', error);
     } finally {
       setSolving(false);
     }
   };
+  // =============================================
 
   if (loading) {
     return (
@@ -114,8 +121,7 @@ const CasePage = () => {
     );
   }
 
-if (result) {
-    // Solution Result Screen
+  if (result) {
     return (
       <div className="min-h-screen bg-noir-darkest flex items-center justify-center px-4">
         <motion.div
@@ -143,7 +149,6 @@ if (result) {
               <div className="bg-noir-dark p-6 rounded border border-gray-700 mb-6">
                   <p className="text-gray-400 text-sm uppercase tracking-widest mb-4">Den skyldige var</p>
                   
-                  {/* BILD PÅ DEN SKYLDIGE */}
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-900 mx-auto mb-4">
                     <img 
                         src={getImagePath('suspects', result.guiltyParty)} 
@@ -178,7 +183,6 @@ if (result) {
 
   return (
     <div className="min-h-screen bg-noir-darkest pb-12">
-      {/* Header */}
       <div className="bg-noir-darker border-b border-gray-800 py-6">
         <div className="container mx-auto px-4">
           <button
@@ -198,35 +202,26 @@ if (result) {
 
       <div className="container mx-auto px-4 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Case Description */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="card-noir p-6"
             >
               <h2 className="text-2xl font-noir text-gray-100 mb-4">{t('case.details')}</h2>
-
-              {/* Location Image */}
               {caseData.location && (
                 <div className="mb-4 rounded overflow-hidden border border-gray-700">
                   <img
                     src={getImagePath('locations', caseData.location)}
                     alt={caseData.location}
                     className="w-full h-64 object-cover"
-                    onError={(e) => {
-                      // Hide image if it fails to load
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 </div>
               )}
-
               <p className="text-gray-300 leading-relaxed">{caseData.description}</p>
             </motion.div>
 
-            {/* Investigation */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -269,9 +264,7 @@ if (result) {
             </motion.div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Suspects */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -282,9 +275,7 @@ if (result) {
                 <Users className="text-noir-accent" size={28} />
                 {t('case.suspects')}
               </h2>
-
               <p className="text-gray-400 text-sm mb-4">{t('case.selectSuspect')}</p>
-
               <div className="space-y-3">
                 {caseData.possibleSuspects.map((suspect) => (
                   <button
@@ -293,16 +284,12 @@ if (result) {
                     className="w-full bg-noir-dark hover:bg-noir-medium border border-gray-700 hover:border-noir-accent p-3 rounded transition-all group"
                   >
                     <div className="flex items-center gap-3">
-                      {/* Suspect Image */}
                       <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-noir-accent flex-shrink-0">
                         <img
                           src={getImagePath('suspects', suspect)}
                           alt={suspect}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to first letter if image fails
-                            e.currentTarget.style.display = 'none';
-                          }}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                       </div>
                       <span className="text-gray-100 font-detective flex-1 text-left">{suspect}</span>
@@ -313,7 +300,6 @@ if (result) {
               </div>
             </motion.div>
 
-            {/* Solve Case */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -337,7 +323,6 @@ if (result) {
         </div>
       </div>
 
-      {/* Solve Modal */}
       {showSolveModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div
@@ -347,7 +332,6 @@ if (result) {
           >
             <h2 className="text-3xl font-noir text-noir-accent mb-4">{t('solution.title')}</h2>
             <p className="text-gray-400 mb-6">{t('solution.subtitle')}</p>
-
             <div className="space-y-3 mb-8">
               {caseData.possibleSuspects.map((suspect) => (
                 <button
@@ -360,15 +344,12 @@ if (result) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    {/* Suspect Image */}
                     <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-600 flex-shrink-0">
                       <img
                         src={getImagePath('suspects', suspect)}
                         alt={suspect}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     </div>
                     <span className="text-gray-100 font-detective text-lg">{suspect}</span>
@@ -376,19 +357,11 @@ if (result) {
                 </button>
               ))}
             </div>
-
             <div className="flex gap-4">
-              <button
-                onClick={() => setShowSolveModal(false)}
-                className="btn-ghost flex-1"
-              >
+              <button onClick={() => setShowSolveModal(false)} className="btn-ghost flex-1">
                 {t('common.cancel')}
               </button>
-              <button
-                onClick={handleSolveCase}
-                disabled={!selectedSuspect || solving}
-                className="btn-primary flex-1"
-              >
+              <button onClick={handleSolveCase} disabled={!selectedSuspect || solving} className="btn-primary flex-1">
                 {solving ? t('common.loading') : t('solution.submit')}
               </button>
             </div>

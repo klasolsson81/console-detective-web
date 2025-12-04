@@ -1,31 +1,25 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GameSession, Case } from '../types';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { GameSession } from '../types';
 
 interface GameContextType {
   session: GameSession | null;
-  startGame: (name: string, avatar: 'man' | 'woman', sessionData: any) => void;
-  updateScore: (points: number) => void;
-  completeCase: (caseId: string, isSolved: boolean, points: number) => void;
+  startGame: (playerName: string, avatar: string, sessionData: any) => void;
   endGame: () => void;
+  // NY FUNKTION: Uppdaterar ett fall som löst
+  markCaseCompleted: (caseId: string, isSolved: boolean, pointsEarned: number) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-export const useGame = () => {
-  const context = useContext(GameContext);
-  if (!context) throw new Error('useGame must be used within GameProvider');
-  return context;
-};
-
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    // Försök ladda från localStorage vid refresh
+    // Försök hämta sparad session från localStorage vid start
     const saved = localStorage.getItem('gameSession');
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Spara till localStorage varje gång session ändras
   useEffect(() => {
-    // Spara session till localStorage vid ändringar
     if (session) {
       localStorage.setItem('gameSession', JSON.stringify(session));
     } else {
@@ -33,45 +27,58 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session]);
 
-  const startGame = (playerName: string, avatar: 'man' | 'woman', sessionData: any) => {
+  const startGame = (playerName: string, avatar: string, sessionData: any) => {
     const newSession: GameSession = {
       sessionId: sessionData.sessionId,
       playerName,
       avatar,
-      score: 0, // Börjar på 0
-      cases: sessionData.cases,
-      activeCaseIndex: null
+      score: 0,
+      cases: sessionData.cases.map((c: any) => ({
+        ...c,
+        isCompleted: false, // Säkerställ att vi börjar på noll
+        isSolved: false
+      }))
     };
     setSession(newSession);
   };
 
-  const updateScore = (points: number) => {
-    if (!session) return;
-    setSession(prev => prev ? { ...prev, score: prev.score + points } : null);
-  };
-
-  const completeCase = (caseId: string, isSolved: boolean, points: number) => {
-    if (!session) return;
-    
-    const updatedCases = session.cases.map(c => 
-      c.id === caseId ? { ...c, isCompleted: true, isSolved } : c
-    );
-
-    setSession(prev => prev ? {
-      ...prev,
-      cases: updatedCases,
-      score: prev.score + points
-    } : null);
-  };
-
   const endGame = () => {
     setSession(null);
-    localStorage.removeItem('gameSession');
+  };
+
+  // === HÄR ÄR MAGIN SOM SAKNADES ===
+  const markCaseCompleted = (caseId: string, isSolved: boolean, pointsEarned: number) => {
+    setSession((prev) => {
+      if (!prev) return null;
+
+      // 1. Uppdatera listan med fall
+      const updatedCases = prev.cases.map((c) => {
+        if (c.id === caseId) {
+          return { ...c, isCompleted: true, isSolved: isSolved };
+        }
+        return c;
+      });
+
+      // 2. Uppdatera totalpoängen
+      const newScore = prev.score + pointsEarned;
+
+      return {
+        ...prev,
+        cases: updatedCases,
+        score: newScore
+      };
+    });
   };
 
   return (
-    <GameContext.Provider value={{ session, startGame, updateScore, completeCase, endGame }}>
+    <GameContext.Provider value={{ session, startGame, endGame, markCaseCompleted }}>
       {children}
     </GameContext.Provider>
   );
+};
+
+export const useGame = () => {
+  const context = useContext(GameContext);
+  if (!context) throw new Error('useGame must be used within a GameProvider');
+  return context;
 };

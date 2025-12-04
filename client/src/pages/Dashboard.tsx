@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useGame } from '../contexts/GameContext'; // Uppdaterad
+import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
 import { LeaderboardEntry } from '../types';
-import { Eye, Trophy, LogOut, Skull, Briefcase, Home, Heart, Lock } from 'lucide-react';
+import { Eye, Trophy, LogOut, Skull, Briefcase, Home, Heart, Star } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ const Dashboard = () => {
     try {
       await gameAPI.submitScore(session.playerName, session.avatar, session.score);
       setScoreSubmitted(true);
-      await loadLeaderboard(); // Hämta ny lista
+      await loadLeaderboard();
     } catch (error) {
       console.error("Kunde inte spara poäng", error);
     } finally {
@@ -53,6 +53,7 @@ const Dashboard = () => {
 
   if (!session) return null;
 
+  // Kolla om alla fall är klara
   const allCompleted = session.cases.every(c => c.isCompleted);
   
   const getIcon = (category: string) => {
@@ -71,7 +72,6 @@ const Dashboard = () => {
       <header className="bg-noir-darker border-b border-gray-800 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-             {/* Spelarens Avatar */}
              <div className="w-10 h-10 rounded-full overflow-hidden border border-noir-accent">
                 <img src={`/images/suspects/${session.avatar}.png`} alt="Avatar" className="w-full h-full object-cover" />
              </div>
@@ -83,7 +83,7 @@ const Dashboard = () => {
           
           <div className="flex items-center gap-6">
             <div className="text-right">
-                <p className="text-gray-400 text-xs uppercase tracking-widest">Nuvarande Poäng</p>
+                <p className="text-gray-400 text-xs uppercase tracking-widest">Poäng</p>
                 <p className="text-2xl font-noir text-gray-100">{session.score}</p>
             </div>
             <button onClick={handleQuit} className="text-red-400 hover:text-red-300">
@@ -93,109 +93,151 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-4 py-8">
         
-        {/* Main Column: Cases */}
-        <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-3xl font-noir text-gray-100 mb-6">Aktiva Fall</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {session.cases.map((c, idx) => {
-                    const Icon = getIcon(c.category);
-                    return (
-                        <motion.div 
-                            key={c.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            onClick={() => !c.isCompleted && navigate(`/case/${c.id}`)}
-                            className={`p-6 border border-gray-800 bg-noir-darker relative overflow-hidden group transition-all ${c.isCompleted ? 'opacity-70 grayscale' : 'hover:border-noir-accent cursor-pointer'}`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <Icon className={`w-8 h-8 ${c.isCompleted ? 'text-gray-600' : 'text-noir-accent'}`} />
-                                {c.isCompleted && (
-                                    <span className={`px-2 py-1 text-xs font-bold rounded ${c.isSolved ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
-                                        {c.isSolved ? 'LÖST' : 'MISSLYCKAT'}
-                                    </span>
-                                )}
-                            </div>
-                            <h3 className="text-xl font-noir text-gray-100 mb-2">{c.title}</h3>
-                            <p className="text-sm text-gray-500 line-clamp-2">{c.description}</p>
-                            
-                            {!c.isCompleted && (
-                                <div className="absolute bottom-0 left-0 w-full h-1 bg-noir-accent transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-                            )}
-                        </motion.div>
-                    );
-                })}
-            </div>
+        {/* === SCENARIO 1: SPELET ÄR SLUT (SUMMARY SCREEN) === */}
+        {allCompleted ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-4xl mx-auto text-center"
+          >
+            <div className="card-noir p-12 mb-8 border-2 border-noir-accent">
+                <Star className="text-noir-accent w-24 h-24 mx-auto mb-6 animate-pulse" />
+                <h1 className="text-5xl md:text-6xl font-noir text-noir-accent mb-4">Utredning Avslutad</h1>
+                <p className="text-xl text-gray-300 mb-8 font-detective">
+                    Bra jobbat, detektiv {session.playerName}. Här är din slutrapport.
+                </p>
 
-            {allCompleted && !scoreSubmitted && (
-                <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="mt-8 p-8 bg-noir-accent/10 border border-noir-accent text-center"
-                >
-                    <h3 className="text-3xl font-noir text-noir-accent mb-2">Utredning Avslutad</h3>
-                    <p className="text-gray-300 mb-6">Slutpoäng: <span className="text-white font-bold text-xl">{session.score}</span></p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div className="bg-noir-dark p-6 rounded border border-gray-700">
+                        <p className="text-gray-400 text-sm uppercase">Total Poäng</p>
+                        <p className="text-4xl font-noir text-white">{session.score}</p>
+                    </div>
+                    <div className="bg-noir-dark p-6 rounded border border-gray-700">
+                        <p className="text-gray-400 text-sm uppercase">Lösta Fall</p>
+                        <p className="text-4xl font-noir text-green-400">
+                            {session.cases.filter(c => c.isSolved).length} / {session.cases.length}
+                        </p>
+                    </div>
+                    <div className="bg-noir-dark p-6 rounded border border-gray-700">
+                        <p className="text-gray-400 text-sm uppercase">Omdöme</p>
+                        <p className="text-2xl font-noir text-noir-accent mt-2">
+                            {session.score > 300 ? "MÄSTERDETEKTIV" : session.score > 100 ? "POLISKONSTAPEL" : "AMATÖR"}
+                        </p>
+                    </div>
+                </div>
+
+                {!scoreSubmitted ? (
                     <button 
                         onClick={handleSubmitFinalScore}
                         disabled={submittingScore}
-                        className="btn-primary w-full max-w-md mx-auto"
+                        className="btn-primary w-full max-w-md mx-auto text-xl py-4"
                     >
-                        {submittingScore ? 'Sparar...' : 'SPARA TILL TOPPLISTAN & AVSLUTA'}
+                        {submittingScore ? 'Sparar...' : 'SPARA TILL TOPPLISTAN'}
                     </button>
-                </motion.div>
-            )}
-             {allCompleted && scoreSubmitted && (
-                <div className="mt-8 text-center">
-                     <p className="text-green-400 mb-4">Poäng sparad!</p>
-                     <button onClick={() => { endGame(); navigate('/'); }} className="btn-secondary">
-                        TILLBAKA TILL START
-                     </button>
-                </div>
-            )}
-        </div>
+                ) : (
+                    <div className="space-y-4">
+                         <div className="p-4 bg-green-900/30 border border-green-500 rounded text-green-400 mb-6">
+                            Din poäng har sparats till topplistan!
+                         </div>
+                         <button onClick={() => { endGame(); navigate('/'); }} className="btn-secondary w-full max-w-md mx-auto">
+                            TILLBAKA TILL STARTSIDAN
+                         </button>
+                    </div>
+                )}
+            </div>
 
-        {/* Sidebar: Leaderboard & Rules */}
-        <div className="space-y-8">
-            <div className="card-noir p-6">
-                <h3 className="text-xl font-noir text-noir-accent mb-4 flex items-center gap-2">
-                    <Trophy size={20} /> Topplista
+            {/* Visa Topplistan här också */}
+            <div className="card-noir p-8 max-w-2xl mx-auto">
+                <h3 className="text-2xl font-noir text-white mb-6 flex items-center justify-center gap-2">
+                    <Trophy className="text-noir-accent" /> Topplista
                 </h3>
-                <div className="space-y-3">
-                    {leaderboard.length === 0 ? (
-                        <p className="text-gray-500 text-sm italic">Inga resultat än...</p>
-                    ) : (
-                        leaderboard.map((entry, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-sm border-b border-gray-800 pb-2">
-                                <div className="flex items-center gap-3">
-                                    <span className={`font-bold w-6 ${idx < 3 ? 'text-noir-accent' : 'text-gray-600'}`}>#{idx + 1}</span>
-                                    <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-800">
-                                         <img src={`/images/suspects/${entry.avatar}.png`} alt="av" className="w-full h-full object-cover" />
-                                    </div>
-                                    <span className="text-gray-300">{entry.playerName}</span>
+                <div className="space-y-3 text-left">
+                    {leaderboard.slice(0, 5).map((entry, idx) => (
+                        <div key={idx} className={`flex items-center justify-between p-3 rounded ${entry.playerName === session.playerName && scoreSubmitted ? 'bg-noir-accent/20 border border-noir-accent' : 'border-b border-gray-800'}`}>
+                            <div className="flex items-center gap-4">
+                                <span className={`font-bold w-6 text-xl ${idx < 3 ? 'text-noir-accent' : 'text-gray-600'}`}>#{idx + 1}</span>
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800">
+                                     <img src={`/images/suspects/${entry.avatar}.png`} alt="av" className="w-full h-full object-cover" />
                                 </div>
-                                <span className="font-noir text-noir-accent">{entry.score}</span>
+                                <span className="text-gray-200 text-lg">{entry.playerName}</span>
                             </div>
-                        ))
-                    )}
+                            <span className="font-noir text-noir-accent text-xl">{entry.score}p</span>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            <div className="bg-noir-dark p-6 border border-gray-800 text-sm text-gray-400">
-                <h4 className="text-gray-200 font-bold mb-2 uppercase tracking-wider">Regler</h4>
-                <ul className="space-y-2 list-disc pl-4">
-                    <li>Du har 4 fall att lösa.</li>
-                    <li>Rätt gissning: <span className="text-green-400">+100p</span></li>
-                    <li>Fel gissning: <span className="text-red-400">-50p</span></li>
-                    <li>Undersökning: <span className="text-yellow-500">-10p</span></li>
-                    <li>Förhörsfråga: <span className="text-yellow-500">-5p</span></li>
-                    <li>Maximal poäng: 400p</li>
-                </ul>
-            </div>
-        </div>
+          </motion.div>
+        ) : (
+            // === SCENARIO 2: SPELET PÅGÅR (VISA FALL) ===
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                    <h2 className="text-3xl font-noir text-gray-100 mb-6">Aktiva Fall</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {session.cases.map((c, idx) => {
+                            const Icon = getIcon(c.category);
+                            return (
+                                <motion.div 
+                                    key={c.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    onClick={() => !c.isCompleted && navigate(`/case/${c.id}`)}
+                                    className={`p-6 border bg-noir-darker relative overflow-hidden group transition-all ${
+                                        c.isCompleted 
+                                        ? 'opacity-60 border-gray-800 cursor-default' 
+                                        : 'border-gray-700 hover:border-noir-accent cursor-pointer'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <Icon className={`w-8 h-8 ${c.isCompleted ? 'text-gray-500' : 'text-noir-accent'}`} />
+                                        {c.isCompleted && (
+                                            <span className={`px-3 py-1 text-xs font-bold rounded uppercase tracking-wider ${
+                                                c.isSolved ? 'bg-green-900/50 text-green-400 border border-green-800' : 'bg-red-900/50 text-red-400 border border-red-800'
+                                            }`}>
+                                                {c.isSolved ? 'FALLET LÖST' : 'MISSLYCKAT'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className={`text-xl font-noir mb-2 ${c.isCompleted ? 'text-gray-500' : 'text-gray-100'}`}>{c.title}</h3>
+                                    <p className="text-sm text-gray-500 line-clamp-2">{c.description}</p>
+                                    
+                                    {!c.isCompleted && (
+                                        <div className="absolute bottom-0 left-0 w-full h-1 bg-noir-accent transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                                    )}
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </div>
 
+                {/* Sidebar */}
+                <div className="space-y-8">
+                    <div className="card-noir p-6">
+                        <h3 className="text-xl font-noir text-noir-accent mb-4 flex items-center gap-2">
+                            <Trophy size={20} /> Topplista
+                        </h3>
+                        <div className="space-y-3">
+                            {leaderboard.length === 0 ? (
+                                <p className="text-gray-500 text-sm italic">Inga resultat än...</p>
+                            ) : (
+                                leaderboard.map((entry, idx) => (
+                                    <div key={idx} className="flex items-center justify-between text-sm border-b border-gray-800 pb-2">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`font-bold w-6 ${idx < 3 ? 'text-noir-accent' : 'text-gray-600'}`}>#{idx + 1}</span>
+                                            <span className="text-gray-300">{entry.playerName}</span>
+                                        </div>
+                                        <span className="font-noir text-noir-accent">{entry.score}</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );
