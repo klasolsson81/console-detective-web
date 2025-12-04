@@ -8,7 +8,6 @@ namespace ConsoleDetective.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class ChatController : ControllerBase
     {
         private readonly ChatService _chatService;
@@ -47,10 +46,20 @@ namespace ConsoleDetective.API.Controllers
 
                 // Skapa förhörssession
                 var session = await _chatService.CreateInterrogationSessionAsync(
-                    caseData, 
+                    caseData,
                     request.SuspectName);
 
-                return Ok(session);
+                // Mappa till DTO för att undvika circular reference
+                var sessionDto = new InterrogationSessionDto
+                {
+                    SessionId = session.Id,
+                    CaseId = session.CaseId,
+                    SuspectName = session.SuspectName,
+                    StartedAt = session.StartedAt,
+                    Messages = new List<ChatMessageDto>()
+                };
+
+                return Ok(sessionDto);
             }
             catch (Exception ex)
             {
@@ -151,8 +160,14 @@ namespace ConsoleDetective.API.Controllers
 
         private string GetUserId()
         {
-            return User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? throw new UnauthorizedAccessException("Användare ej autentiserad");
+            // För guest-användare, returnera ett temporärt ID
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Guest mode - använd en temporär guest ID
+                return "guest-user";
+            }
+            return userId;
         }
     }
 

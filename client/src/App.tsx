@@ -2,8 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import CasePage from './pages/CasePage';
 import InterrogationPage from './pages/InterrogationPage';
@@ -23,8 +21,6 @@ function App() {
     <div className="min-h-screen bg-noir-darkest">
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
 
         <Route
           path="/dashboard"

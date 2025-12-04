@@ -50,16 +50,28 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:5173",              // Vite dev server
-            "http://localhost:3000",              // Alternative React port
-            "https://localhost:5173",             // HTTPS lokalt
-            "https://*.vercel.app"                // Alla Vercel domäner
-        )
-        .SetIsOriginAllowedToAllowWildcardSubdomains()
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials();
+        if (builder.Environment.IsDevelopment())
+        {
+            // I utveckling: tillåt alla localhost-portar
+            policy.SetIsOriginAllowed(origin =>
+                origin.StartsWith("http://localhost:") ||
+                origin.StartsWith("https://localhost:"))
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+        }
+        else
+        {
+            // I produktion: specifika origins
+            policy.WithOrigins(
+                "https://*.vercel.app",
+                "https://*.railway.app"
+            )
+            .SetIsOriginAllowedToAllowWildcardSubdomains()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+        }
     });
 });
 
@@ -71,7 +83,12 @@ builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<EmailService>();
 
 // === Controllers ===
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Use camelCase for JSON properties (sessionId instead of SessionId)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 
 // === Swagger/OpenAPI ===
 builder.Services.AddEndpointsApiExplorer();
@@ -156,12 +173,34 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        
+
         if (app.Environment.IsDevelopment())
         {
             // Auto-migrate i development
             context.Database.Migrate();
             Console.WriteLine("✅ Databas migrerad");
+        }
+
+        // Skapa guest user om den inte finns
+        var guestUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var guestUser = context.Users.Find(guestUserId);
+
+        if (guestUser == null)
+        {
+            guestUser = new ConsoleDetective.API.Models.Domain.User
+            {
+                Id = guestUserId,
+                Username = "Guest User",
+                Email = "guest@consoledetective.local",
+                PasswordHash = "", // Inget lösenord för guest
+                IsVerified = true,
+                Points = 0,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            context.Users.Add(guestUser);
+            context.SaveChanges();
+            Console.WriteLine("✅ Guest user skapad");
         }
     }
     catch (Exception ex)

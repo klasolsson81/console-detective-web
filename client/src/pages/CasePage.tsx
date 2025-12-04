@@ -14,6 +14,13 @@ import {
   Loader
 } from 'lucide-react';
 
+// Helper function to get image path with fallback
+const getImagePath = (folder: 'suspects' | 'locations', name: string) => {
+  // Normalize name: remove spaces, convert to lowercase
+  const normalizedName = name.toLowerCase().replace(/\s+/g, '_');
+  return `/images/${folder}/${normalizedName}.jpg`;
+};
+
 const CasePage = () => {
   const { t } = useTranslation();
   const { caseId } = useParams<{ caseId: string }>();
@@ -64,7 +71,7 @@ const CasePage = () => {
 
     try {
       const session = await chatAPI.startInterrogation(caseId, suspectName);
-      navigate(`/interrogation/${session.id}`);
+      navigate(`/interrogation/${session.sessionId}`);
     } catch (error) {
       console.error('Failed to start interrogation:', error);
     }
@@ -174,6 +181,22 @@ const CasePage = () => {
               className="card-noir p-6"
             >
               <h2 className="text-2xl font-noir text-gray-100 mb-4">{t('case.details')}</h2>
+
+              {/* Location Image */}
+              {caseData.location && (
+                <div className="mb-4 rounded overflow-hidden border border-gray-700">
+                  <img
+                    src={getImagePath('locations', caseData.location)}
+                    alt={caseData.location}
+                    className="w-full h-64 object-cover"
+                    onError={(e) => {
+                      // Hide image if it fails to load
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
               <p className="text-gray-300 leading-relaxed">{caseData.description}</p>
             </motion.div>
 
@@ -241,10 +264,24 @@ const CasePage = () => {
                   <button
                     key={suspect}
                     onClick={() => handleInterrogate(suspect)}
-                    className="w-full bg-noir-dark hover:bg-noir-medium border border-gray-700 hover:border-noir-accent p-4 rounded transition-all flex items-center justify-between group"
+                    className="w-full bg-noir-dark hover:bg-noir-medium border border-gray-700 hover:border-noir-accent p-3 rounded transition-all group"
                   >
-                    <span className="text-gray-100 font-detective">{suspect}</span>
-                    <MessageSquare className="text-gray-500 group-hover:text-noir-accent" size={20} />
+                    <div className="flex items-center gap-3">
+                      {/* Suspect Image */}
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-noir-accent flex-shrink-0">
+                        <img
+                          src={getImagePath('suspects', suspect)}
+                          alt={suspect}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to first letter if image fails
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <span className="text-gray-100 font-detective flex-1 text-left">{suspect}</span>
+                      <MessageSquare className="text-gray-500 group-hover:text-noir-accent" size={20} />
+                    </div>
                   </button>
                 ))}
               </div>
@@ -296,7 +333,20 @@ const CasePage = () => {
                       : 'border-gray-700 hover:border-gray-600'
                   }`}
                 >
-                  <span className="text-gray-100 font-detective text-lg">{suspect}</span>
+                  <div className="flex items-center gap-3">
+                    {/* Suspect Image */}
+                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-600 flex-shrink-0">
+                      <img
+                        src={getImagePath('suspects', suspect)}
+                        alt={suspect}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <span className="text-gray-100 font-detective text-lg">{suspect}</span>
+                  </div>
                 </button>
               ))}
             </div>

@@ -32,8 +32,9 @@ bld/
 *.sqlite
 *.sqlite3
 
-## User Secrets
-**/appsettings.Development.json
+## User Secrets (Note: User Secrets are stored securely outside the project)
+## appsettings.Development.json can be safely committed (no secrets in it)
+## All secrets should be in User Secrets or environment variables
 
 ## Entity Framework Migrations (valfritt - jag rekommenderar att commita migrations)
 # **/Migrations/

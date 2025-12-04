@@ -8,7 +8,6 @@ namespace ConsoleDetective.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // Kräver JWT-token
     public class CaseController : ControllerBase
     {
         private readonly CaseService _caseService;
@@ -29,11 +28,13 @@ namespace ConsoleDetective.API.Controllers
         /// Hämta alla användarens fall
         /// </summary>
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<List<CaseResponseDto>>> GetAllCases()
         {
             var userId = GetUserId();
             var cases = await _caseService.GetUserCasesAsync(userId);
-            return Ok(cases);
+            var caseDtos = cases.Select(c => MapToCaseResponseDto(c)).ToList();
+            return Ok(caseDtos);
         }
 
         /// <summary>
@@ -44,11 +45,12 @@ namespace ConsoleDetective.API.Controllers
         {
             var userId = GetUserId();
             var caseData = await _caseService.GetCaseByIdAsync(caseId, userId);
-            
+
             if (caseData == null)
                 return NotFound(new { message = "Fall hittades inte" });
 
-            return Ok(caseData);
+            var caseDto = MapToCaseResponseDto(caseData);
+            return Ok(caseDto);
         }
 
         /// <summary>
@@ -73,14 +75,15 @@ namespace ConsoleDetective.API.Controllers
                 var savedCase = await _caseService.CreateCaseAsync(userId, generatedCase);
 
                 _logger.LogInformation(
-                    "Nytt fall genererat: {CaseId} för användare {UserId}", 
-                    savedCase.Id, 
+                    "Nytt fall genererat: {CaseId} för användare {UserId}",
+                    savedCase.Id,
                     userId);
 
+                var caseDto = MapToCaseResponseDto(savedCase);
                 return CreatedAtAction(
-                    nameof(GetCase), 
-                    new { caseId = savedCase.Id }, 
-                    savedCase);
+                    nameof(GetCase),
+                    new { caseId = savedCase.Id },
+                    caseDto);
             }
             catch (Exception ex)
             {
@@ -93,13 +96,13 @@ namespace ConsoleDetective.API.Controllers
         /// Undersök brottsplats (generera ledtråd via AI)
         /// </summary>
         [HttpPost("{caseId}/investigate")]
-        public async Task<ActionResult<InvestigationResultDto>> InvestigateLocation(Guid caseId)
+        public async Task<ActionResult<ClueDto>> InvestigateLocation(Guid caseId)
         {
             try
             {
                 var userId = GetUserId();
                 var caseData = await _caseService.GetCaseByIdAsync(caseId, userId);
-                
+
                 if (caseData == null)
                     return NotFound(new { message = "Fall hittades inte" });
 
@@ -108,11 +111,21 @@ namespace ConsoleDetective.API.Controllers
 
                 // Generera ledtråd via AI
                 var clue = await _aiService.GenerateInvestigationClueAsync(caseData);
-                
-                // Spara ledtråd
-                var result = await _caseService.AddClueAsync(caseId, clue);
 
-                return Ok(result);
+                // Spara ledtråd
+                var savedClue = await _caseService.AddClueAsync(caseId, clue);
+
+                // Mappa till DTO för att undvika circular reference
+                var clueDto = new ClueDto
+                {
+                    Id = savedClue.Id,
+                    Text = savedClue.Text,
+                    Type = savedClue.Type,
+                    DiscoveredAt = savedClue.DiscoveredAt,
+                    AssignedToSuspect = savedClue.AssignedToSuspect
+                };
+
+                return Ok(clueDto);
             }
             catch (Exception ex)
             {
@@ -150,14 +163,44 @@ namespace ConsoleDetective.API.Controllers
         // Helper methods
         private string GetUserId()
         {
-            return User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? throw new UnauthorizedAccessException("Användare ej autentiserad");
+            // För guest-användare, returnera ett temporärt ID
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Guest mode - använd en temporär guest ID
+                return "guest-user";
+            }
+            return userId;
         }
 
         private bool IsValidCategory(string category)
         {
             var validCategories = new[] { "Mord", "Bankrån", "Inbrott", "Otrohet" };
             return validCategories.Contains(category);
+        }
+
+        private CaseResponseDto MapToCaseResponseDto(Models.Domain.Case caseEntity)
+        {
+            return new CaseResponseDto
+            {
+                Id = caseEntity.Id,
+                Title = caseEntity.Title,
+                Category = caseEntity.Category,
+                Description = caseEntity.Description,
+                Location = caseEntity.Location,
+                PossibleSuspects = caseEntity.PossibleSuspects,
+                IsCompleted = caseEntity.IsCompleted,
+                IsSolved = caseEntity.IsSolved,
+                CreatedAt = caseEntity.CreatedAt,
+                Clues = caseEntity.Clues.Select(c => new ClueDto
+                {
+                    Id = c.Id,
+                    Text = c.Text,
+                    Type = c.Type,
+                    DiscoveredAt = c.DiscoveredAt,
+                    AssignedToSuspect = c.AssignedToSuspect
+                }).ToList()
+            };
         }
     }
 

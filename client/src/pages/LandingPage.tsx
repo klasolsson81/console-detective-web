@@ -98,50 +98,24 @@ const LandingPage = () => {
           </motion.div>
         )}
 
-        {/* Call to Action Buttons */}
+        {/* Start Game Button */}
         {showContent && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 2 }}
-            className="flex flex-col md:flex-row gap-6 items-center"
+            className="flex flex-col items-center gap-4"
           >
             <motion.button
-              whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(212,175,55,0.5)' }}
+              whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(212,175,55,0.6)' }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/login')}
-              className="btn-primary text-xl px-12 py-4"
-            >
-              {t('landing.login')}
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/register')}
-              className="btn-secondary text-xl px-12 py-4"
-            >
-              {t('landing.register')}
-            </motion.button>
-          </motion.div>
-        )}
-
-        {/* Guest Mode Button */}
-        {showContent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.5 }}
-            className="mt-8 text-center"
-          >
-            <button
               onClick={handlePlayAsGuest}
-              className="text-gray-500 hover:text-noir-accent transition-colors duration-300 text-lg underline decoration-dashed"
+              className="btn-primary text-2xl px-16 py-6 font-noir tracking-wider"
             >
-              🎭 {t('landing.playAsGuest')}
-            </button>
-            <p className="text-sm text-gray-600 mt-2">
-              ⚠️ {t('landing.guestWarning')}
+              🕵️ {i18n.language === 'sv' ? 'STARTA NYTT SPEL' : 'START NEW GAME'}
+            </motion.button>
+            <p className="text-sm text-gray-500 mt-2 font-detective">
+              {i18n.language === 'sv' ? 'Ingen registrering krävs - börja spela direkt!' : 'No registration required - start playing immediately!'}
             </p>
           </motion.div>
         )}

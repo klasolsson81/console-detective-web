@@ -15,10 +15,21 @@ namespace ConsoleDetective.API.Services
             _aiService = aiService;
         }
 
+        // Helper method to convert userId string to Guid (handles guest users)
+        private Guid ParseUserId(string userId)
+        {
+            if (userId == "guest-user")
+            {
+                // Special GUID for guest users
+                return Guid.Parse("00000000-0000-0000-0000-000000000001");
+            }
+            return Guid.Parse(userId);
+        }
+
         // ==================== HÄMTA ANVÄNDARENS FALL ====================
         public async Task<List<Case>> GetUserCasesAsync(string userId)
         {
-            var userGuid = Guid.Parse(userId);
+            var userGuid = ParseUserId(userId);
             
             return await _context.Cases
                 .Include(c => c.Clues)
@@ -30,7 +41,7 @@ namespace ConsoleDetective.API.Services
         // ==================== HÄMTA SPECIFIKT FALL ====================
         public async Task<Case?> GetCaseByIdAsync(Guid caseId, string userId)
         {
-            var userGuid = Guid.Parse(userId);
+            var userGuid = ParseUserId(userId);
             
             return await _context.Cases
                 .Include(c => c.Clues)
@@ -42,7 +53,7 @@ namespace ConsoleDetective.API.Services
         // ==================== SKAPA NYTT FALL ====================
         public async Task<Case> CreateCaseAsync(string userId, GeneratedCaseData generatedData)
         {
-            var userGuid = Guid.Parse(userId);
+            var userGuid = ParseUserId(userId);
             
             var newCase = new Case
             {
@@ -103,11 +114,11 @@ namespace ConsoleDetective.API.Services
 
         // ==================== GÖR ANKLAGELSE ====================
         public async Task<(bool IsCorrect, int PointsChange)> MakeAccusationAsync(
-            Guid caseId, 
-            string userId, 
+            Guid caseId,
+            string userId,
             string accusedSuspect)
         {
-            var userGuid = Guid.Parse(userId);
+            var userGuid = ParseUserId(userId);
             
             var caseData = await _context.Cases
                 .Include(c => c.User)
@@ -141,7 +152,7 @@ namespace ConsoleDetective.API.Services
         // ==================== HÄMTA STATISTIK ====================
         public async Task<UserStatistics> GetUserStatisticsAsync(string userId)
         {
-            var userGuid = Guid.Parse(userId);
+            var userGuid = ParseUserId(userId);
             
             var cases = await _context.Cases
                 .Where(c => c.UserId == userGuid)

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://localhost:7001/api';
+// Använd environment variable om tillgänglig, annars localhost
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Axios instance
 const api = axios.create({
@@ -69,7 +70,7 @@ export const caseAPI = {
   createCase: async (category: string) => {
     if (isGuestMode()) {
       // För gäster: skapa case via API men spara lokalt
-      const response = await api.post('/cases/generate', { category });
+      const response = await api.post('/case/generate', { category });
       const caseData = response.data;
 
       // Spara i localStorage
@@ -80,7 +81,7 @@ export const caseAPI = {
       return caseData;
     } else {
       // För inloggade: normal API call
-      const response = await api.post('/cases', { category });
+      const response = await api.post('/case', { category });
       return response.data;
     }
   },
@@ -90,7 +91,7 @@ export const caseAPI = {
       // Hämta från localStorage
       return JSON.parse(localStorage.getItem('guestCases') || '[]');
     } else {
-      const response = await api.get('/cases/my');
+      const response = await api.get('/case');
       return response.data;
     }
   },
@@ -100,14 +101,14 @@ export const caseAPI = {
       const guestCases = JSON.parse(localStorage.getItem('guestCases') || '[]');
       return guestCases.find((c: any) => c.id === id);
     } else {
-      const response = await api.get(`/cases/${id}`);
+      const response = await api.get(`/case/${id}`);
       return response.data;
     }
   },
 
   investigateScene: async (caseId: string) => {
     // Denna måste alltid gå via API för AI-generering
-    const response = await api.post(`/cases/${caseId}/investigate`);
+    const response = await api.post(`/case/${caseId}/investigate`);
 
     if (isGuestMode()) {
       // Uppdatera localStorage
@@ -124,7 +125,7 @@ export const caseAPI = {
   },
 
   solveCase: async (caseId: string, suspectName: string) => {
-    const response = await api.post(`/cases/${caseId}/solve`, { suspectName });
+    const response = await api.post(`/case/${caseId}/accuse`, { suspectName });
 
     if (isGuestMode()) {
       // Uppdatera localStorage
@@ -144,18 +145,18 @@ export const caseAPI = {
 // === CHAT/INTERROGATION ENDPOINTS ===
 export const chatAPI = {
   startInterrogation: async (caseId: string, suspectName: string) => {
-    const response = await api.post('/chat/interrogation/start', { caseId, suspectName });
+    const response = await api.post('/chat/start-interrogation', { caseId, suspectName });
     return response.data;
   },
 
   sendMessage: async (sessionId: string, message: string) => {
     // Denna måste alltid gå via API för AI-svar
-    const response = await api.post('/chat/interrogation/message', { sessionId, message });
+    const response = await api.post('/chat/ask', { sessionId, question: message });
     return response.data;
   },
 
   endInterrogation: async (sessionId: string) => {
-    const response = await api.post('/chat/interrogation/end', { sessionId });
+    const response = await api.post(`/chat/${sessionId}/end`);
     return response.data;
   },
 };
