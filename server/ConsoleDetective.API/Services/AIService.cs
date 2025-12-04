@@ -33,27 +33,19 @@ namespace ConsoleDetective.API.Services
             var suspects = new[] { "Nemo", "Anna", "Frida", "Carlos" };
             var location = locations[Random.Shared.Next(locations.Length)];
 
-            string prompt = $@"Du är en kreativ noir-författare som skapar detektivfall.
+            // OPTIMERAD PROMPT FÖR SNABBARE SVAR
+            string prompt = $@"Kategori: {category}. Plats: {location}.
+Misstänkta: {string.Join(", ", suspects)}.
+Välj EN skyldig.
 
-UPPGIFT: Skapa ett {category.ToLower()}-fall på svenska.
+Skapa ett kort noir-mysterium (max 3-4 meningar).
+Inkludera 2 ledtrådar (en pekar på den skyldige, en falsk).
 
-KRAV:
-- Platsen är: {location}
-- Misstänkta: {string.Join(", ", suspects)}
-- Välj EN skyldig person från listan
-- Skriv en fängslande berättelse (4-6 meningar) som etablerar mysteriet
-- Inkludera subtila ledtrådar som pekar mot den skyldige utan att avslöja det
-- Ge falska ledtrådar för de andra misstänkta
-- Använd noir-estetik: mörk, dramatisk, mystisk ton
-
-SVARA ENDAST med giltig JSON:
+SVARA ENDAST JSON:
 {{
-  ""description"": ""Din berättelse här..."",
-  ""guilty"": ""Namnet på den skyldige"",
-  ""initialClues"": [
-    ""Ledtråd 1 (subtil)"",
-    ""Ledtråd 2 (subtil)""
-  ]
+  ""description"": ""Kort berättelse..."",
+  ""guilty"": ""Namn"",
+  ""initialClues"": [""Ledtråd 1"", ""Ledtråd 2""]
 }}";
 
             try

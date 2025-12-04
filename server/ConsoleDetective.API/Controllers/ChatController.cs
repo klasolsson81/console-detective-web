@@ -24,9 +24,35 @@ namespace ConsoleDetective.API.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Starta ett nytt förhör med en misstänkt
-        /// </summary>
+        // === NY METOD: Hämta sessionsinfo (Fixar "Anna"-problemet) ===
+        [HttpGet("session/{sessionId}")]
+        public async Task<ActionResult<InterrogationSessionDto>> GetSession(Guid sessionId)
+        {
+            var session = await _chatService.GetSessionAsync(sessionId);
+            
+            if (session == null)
+                return NotFound(new { message = "Session hittades inte" });
+
+            // Mappa till DTO
+            var sessionDto = new InterrogationSessionDto
+            {
+                SessionId = session.Id,
+                CaseId = session.CaseId,
+                SuspectName = session.SuspectName,
+                StartedAt = session.StartedAt,
+                Messages = session.Messages.Select(m => new ChatMessageDto
+                {
+                    Id = m.Id,
+                    Role = m.Role,
+                    Content = m.Content,
+                    EmotionalTone = m.EmotionalTone,
+                    Timestamp = m.Timestamp
+                }).ToList()
+            };
+
+            return Ok(sessionDto);
+        }
+
         [HttpPost("start-interrogation")]
         public async Task<ActionResult<InterrogationSessionDto>> StartInterrogation(
             [FromBody] StartInterrogationRequestDto request)
@@ -35,21 +61,17 @@ namespace ConsoleDetective.API.Controllers
             {
                 var userId = GetUserId();
                 
-                // Verifiera att fallet existerar och tillhör användaren
                 var caseData = await _caseService.GetCaseByIdAsync(request.CaseId, userId);
                 if (caseData == null)
                     return NotFound(new { message = "Fall hittades inte" });
 
-                // Verifiera att den misstänkta finns i fallet
                 if (!caseData.PossibleSuspects.Contains(request.SuspectName))
                     return BadRequest(new { message = "Misstänkt hittades inte i detta fall" });
 
-                // Skapa förhörssession
                 var session = await _chatService.CreateInterrogationSessionAsync(
                     caseData,
                     request.SuspectName);
 
-                // Mappa till DTO för att undvika circular reference
                 var sessionDto = new InterrogationSessionDto
                 {
                     SessionId = session.Id,
@@ -68,23 +90,17 @@ namespace ConsoleDetective.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Skicka en fråga till en misstänkt (AI genererar svar)
-        /// </summary>
         [HttpPost("ask")]
         public async Task<ActionResult<ChatMessageDto>> AskQuestion(
             [FromBody] AskQuestionRequestDto request)
         {
             try
             {
-                var userId = GetUserId();
-                
                 // Validera session
                 var session = await _chatService.GetSessionAsync(request.SessionId);
                 if (session == null)
                     return NotFound(new { message = "Förhörssession hittades inte" });
 
-                // Skapa användarens meddelande
                 var userMessage = new ChatMessageDto
                 {
                     Id = Guid.NewGuid(),
@@ -93,24 +109,37 @@ namespace ConsoleDetective.API.Controllers
                     Timestamp = DateTime.UtcNow
                 };
 
-                // Generera AI-svar baserat på sammanhang
                 var aiResponse = await _chatService.GenerateResponseAsync(
                     session, 
                     request.Question);
 
-                // Spara både fråga och svar
                 await _chatService.SaveMessageAsync(request.SessionId, userMessage);
                 await _chatService.SaveMessageAsync(request.SessionId, aiResponse);
 
-                // Extrahera potentiell ledtråd från samtalet
-                var clueGenerated = await _chatService.ExtractClueFromConversationAsync(
-                    session.CaseId, 
-                    request.Question, 
-                    aiResponse.Content);
+                // Försök extrahera ledtråd (tyst i bakgrunden)
+                string? clueGenerated = null;
+                try 
+                {
+                     clueGenerated = await _chatService.ExtractClueFromConversationAsync(
+                        session.CaseId, 
+                        request.Question, 
+                        aiResponse.Content);
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogWarning(ex, "Kunde inte extrahera ledtråd, men fortsätter ändå");
+                }
 
                 return Ok(new
                 {
-                    message = aiResponse,
+                    // Returnera AI-meddelandet platt så frontend hittar det lätt
+                    id = aiResponse.Id,
+                    role = aiResponse.Role,
+                    content = aiResponse.Content,
+                    emotionalTone = aiResponse.EmotionalTone,
+                    timestamp = aiResponse.Timestamp,
+                    
+                    // Extra info
                     clueGenerated = clueGenerated != null,
                     clue = clueGenerated
                 });
@@ -122,27 +151,6 @@ namespace ConsoleDetective.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Hämta konversationshistorik för ett förhör
-        /// </summary>
-        [HttpGet("conversation/{sessionId}")]
-        public async Task<ActionResult<List<ChatMessageDto>>> GetConversation(Guid sessionId)
-        {
-            try
-            {
-                var messages = await _chatService.GetConversationHistoryAsync(sessionId);
-                return Ok(messages);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fel vid hämtning av konversation");
-                return StatusCode(500, new { message = "Ett fel uppstod" });
-            }
-        }
-
-        /// <summary>
-        /// Avsluta ett förhör
-        /// </summary>
         [HttpPost("{sessionId}/end")]
         public async Task<ActionResult> EndInterrogation(Guid sessionId)
         {
@@ -160,15 +168,9 @@ namespace ConsoleDetective.API.Controllers
 
         private string GetUserId()
         {
-            // För guest-användare, returnera ett temporärt ID
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                // Guest mode - använd en temporär guest ID
-                return "guest-user";
-            }
+            if (string.IsNullOrEmpty(userId)) return "guest-user";
             return userId;
         }
     }
-
 }

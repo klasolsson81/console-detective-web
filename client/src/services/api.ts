@@ -143,16 +143,23 @@ export const caseAPI = {
 };
 
 // === CHAT/INTERROGATION ENDPOINTS ===
+// === CHAT/INTERROGATION ENDPOINTS ===
 export const chatAPI = {
   startInterrogation: async (caseId: string, suspectName: string) => {
     const response = await api.post('/chat/start-interrogation', { caseId, suspectName });
     return response.data;
   },
 
-  sendMessage: async (sessionId: string, message: string) => {
-    // Denna måste alltid gå via API för AI-svar
-    const response = await api.post('/chat/ask', { sessionId, question: message });
+  // === NY METOD ===
+  getSession: async (sessionId: string) => {
+    const response = await api.get(`/chat/session/${sessionId}`);
     return response.data;
+  },
+  // ================
+
+  sendMessage: async (sessionId: string, message: string) => {
+    const response = await api.post('/chat/ask', { sessionId, question: message });
+    return response.data; // Detta returnerar nu meddelande-objektet direkt
   },
 
   endInterrogation: async (sessionId: string) => {
