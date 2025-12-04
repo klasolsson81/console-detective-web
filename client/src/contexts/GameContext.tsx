@@ -3,6 +3,7 @@ import { GameSession } from '../types';
 
 interface GameContextType {
   session: GameSession | null;
+  // Notera: Här tillåter vi string i input, men konverterar internt
   startGame: (playerName: string, avatar: string, sessionData: any) => void;
   endGame: () => void;
   markCaseCompleted: (caseId: string, isSolved: boolean, pointsEarned: number) => void;
@@ -12,19 +13,10 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    // 1. Rensa alltid localStorage (för att slippa gamla buggar)
     localStorage.removeItem('gameSession');
-
-    // 2. Läs från sessionStorage
     const saved = sessionStorage.getItem('gameSession');
-    if (!saved) return null;
-
-    try {
-      return JSON.parse(saved) as GameSession;
-    } catch (e) {
-      console.error("Kunde inte läsa session", e);
-      return null;
-    }
+    // as GameSession tystar TS-felet vid inläsning
+    return saved ? (JSON.parse(saved) as GameSession) : null;
   });
 
   useEffect(() => {
@@ -36,13 +28,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [session]);
 
   const startGame = (playerName: string, avatarInput: string, sessionData: any) => {
-    // SÄKERHETSKOLL: Tvinga avatar att vara 'man' eller 'woman'
+    // FIX: Konvertera sträng till exakt typ 'man' | 'woman'
     const validAvatar: 'man' | 'woman' = (avatarInput === 'woman') ? 'woman' : 'man';
 
     const newSession: GameSession = {
       sessionId: sessionData.sessionId,
       playerName,
-      avatar: validAvatar, 
+      avatar: validAvatar, // Nu matchar typen perfekt
       score: 0,
       cases: sessionData.cases.map((c: any) => ({
         ...c,
