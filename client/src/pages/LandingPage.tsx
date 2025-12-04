@@ -2,24 +2,35 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useGame } from '../contexts/GameContext'; // <-- Ändrad import
+import { useGame } from '../contexts/GameContext';
 import { Eye, Languages } from 'lucide-react';
 
 const LandingPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { session } = useGame(); // <-- Använd session från GameContext
+  const { session, endGame } = useGame(); // Hämta endGame för att kunna nollställa
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    // Om en session redan finns, gå direkt till dashboard
-    if (session) {
+    // === "STÄDPATRULLEN" ===
+    // Om man kommer till startsidan ska vi rensa gamla sessioner för att undvika buggar.
+    // Men om man redan har en AKTIV session (från context) låter vi den vara.
+    const hasActiveSession = session && session.cases && session.cases.length > 0;
+    
+    if (!hasActiveSession) {
+      // Rensa allt gammalt skräp
+      sessionStorage.clear();
+      localStorage.clear();
+      // Kalla på endGame för att nollställa context
+      endGame();
+    } else {
+      // Om vi har en giltig session, gå till dashboard
       navigate('/dashboard');
     }
 
     const timer = setTimeout(() => setShowContent(true), 500);
     return () => clearTimeout(timer);
-  }, [session, navigate]);
+  }, [session, navigate, endGame]);
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'sv' ? 'en' : 'sv';
@@ -27,7 +38,8 @@ const LandingPage = () => {
   };
 
   const handleStartGame = () => {
-    // Navigera till Setup-sidan där man väljer namn/avatar
+    // Dubbelkolla att vi är rena innan vi startar nytt
+    sessionStorage.removeItem('gameSession');
     navigate('/setup');
   };
 

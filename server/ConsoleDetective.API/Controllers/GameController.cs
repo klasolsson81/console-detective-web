@@ -24,17 +24,14 @@ namespace ConsoleDetective.API.Controllers
         [HttpPost("start-session")]
         public async Task<ActionResult> StartSession()
         {
-            // 1. Skapa gäst-användare om den saknas
             await _caseService.EnsureGuestUserExistsAsync();
 
             var sessionId = Guid.NewGuid().ToString();
             var categories = new[] { "Mord", "Bankrån", "Inbrott", "Otrohet" };
 
-            // 2. Generera data parallellt
             var generationTasks = categories.Select(category => _aiService.GenerateCaseAsync(category));
             var generatedDataList = await Task.WhenAll(generationTasks);
 
-            // 3. Spara till DB sekventiellt (för att undvika krasch)
             var savedCases = new List<Case>();
             foreach (var data in generatedDataList)
             {
@@ -58,24 +55,45 @@ namespace ConsoleDetective.API.Controllers
             });
         }
 
+        // === HÄR ÄR FIXEN FÖR 500-FELET ===
         [HttpGet("leaderboard")]
         public async Task<ActionResult> GetLeaderboard()
         {
-            try {
-                var topList = await _context.Leaderboard
+            try
+            {
+                // Vi hämtar datan och hanterar eventuella NULL-värden direkt
+                var rawList = await _context.Leaderboard
                     .OrderByDescending(e => e.Score)
                     .Take(10)
                     .ToListAsync();
-                return Ok(topList);
-            } catch {
-                return Ok(new List<object>()); 
+
+                // Mappa om listan säkert så att Avatar aldrig är null
+                var safeList = rawList.Select(e => new 
+                {
+                    e.Id,
+                    e.PlayerName,
+                    Score = e.Score,
+                    // Om Avatar är null/tom, sätt "man" som default
+                    Avatar = string.IsNullOrEmpty(e.Avatar) ? "man" : e.Avatar,
+                    e.CompletedAt
+                });
+
+                return Ok(safeList);
+            }
+            catch (Exception ex)
+            {
+                // Om något ändå går fel, returnera tom lista istället för att krascha appen
+                Console.WriteLine($"Leaderboard error: {ex.Message}");
+                return Ok(new List<object>());
             }
         }
 
         [HttpPost("leaderboard")]
         public async Task<ActionResult> SubmitScore([FromBody] LeaderboardEntry entry)
         {
+            // Säkra upp så att avatar alltid har ett värde
             if (string.IsNullOrEmpty(entry.Avatar)) entry.Avatar = "man";
+            
             _context.Leaderboard.Add(entry);
             await _context.SaveChangesAsync();
             return Ok(entry);
