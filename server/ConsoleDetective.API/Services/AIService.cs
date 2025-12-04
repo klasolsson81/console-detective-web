@@ -58,7 +58,7 @@ SVARA ENDAST med giltig JSON:
 
             try
             {
-                var chat = _client.GetChatClient("GPT-5 mini");
+                var chat = _client.GetChatClient("gpt-5-nano");
                 var response = await chat.CompleteChatAsync([
                     new SystemChatMessage("Du är en professionell noir-författare och mysterieskapare."),
                     new UserChatMessage(prompt)
