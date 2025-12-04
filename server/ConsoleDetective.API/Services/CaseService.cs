@@ -113,7 +113,9 @@ namespace ConsoleDetective.API.Services
         }
 
         // ==================== GÖR ANKLAGELSE ====================
-        public async Task<(bool IsCorrect, int PointsChange)> MakeAccusationAsync(
+// ==================== GÖR ANKLAGELSE ====================
+        // Ändrad returtyp för att inkludera namnet på den skyldige
+        public async Task<(bool IsCorrect, int PointsChange, string GuiltyParty)> MakeAccusationAsync(
             Guid caseId,
             string userId,
             string accusedSuspect)
@@ -146,7 +148,8 @@ namespace ConsoleDetective.API.Services
 
             await _context.SaveChangesAsync();
 
-            return (isCorrect, pointsChange);
+            // Returnera även den skyldiges namn!
+            return (isCorrect, pointsChange, caseData.Guilty);
         }
 
         // ==================== HÄMTA STATISTIK ====================

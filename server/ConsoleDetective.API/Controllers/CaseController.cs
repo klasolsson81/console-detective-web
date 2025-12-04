@@ -134,7 +134,7 @@ namespace ConsoleDetective.API.Controllers
             }
         }
 
-        /// <summary>
+/// <summary>
         /// Gör en anklagelse
         /// </summary>
         [HttpPost("{caseId}/accuse")]
@@ -145,9 +145,21 @@ namespace ConsoleDetective.API.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await _caseService.MakeAccusationAsync(caseId, userId, request.SuspectName);
                 
-                return Ok(result);
+                // Hämta resultatet (nu med 3 värden)
+                var (isCorrect, pointsChange, guiltyParty) = await _caseService.MakeAccusationAsync(caseId, userId, request.SuspectName);
+                
+                // Bygg ett komplett svar
+                var resultDto = new AccusationResultDto
+                {
+                    IsCorrect = isCorrect,
+                    PointsAwarded = pointsChange,
+                    AccusedSuspect = request.SuspectName,
+                    GuiltyParty = guiltyParty, // <-- Här skickar vi med namnet!
+                    Message = isCorrect ? "Rätt gissat! Bra jobbat." : "Tyvärr, det var fel."
+                };
+
+                return Ok(resultDto);
             }
             catch (InvalidOperationException ex)
             {
