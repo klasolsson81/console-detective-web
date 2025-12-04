@@ -64,9 +64,10 @@ builder.Services.AddCors(options =>
         {
             // I produktion: specifika origins
             policy.WithOrigins(
-                "https://*.vercel.app",
-                "https://*.railway.app"
-            )
+    "https://*.vercel.app",
+    "https://*.railway.app",
+    "https://consoledetective.klasolsson.se" // <--- LÄGG TILL DENNA!
+)
             .SetIsOriginAllowedToAllowWildcardSubdomains()
             .AllowAnyMethod()
             .AllowAnyHeader()
