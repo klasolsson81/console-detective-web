@@ -2,34 +2,33 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/GameContext';
+import { useGame } from '../contexts/GameContext'; // <-- Ändrad import
 import { Eye, Languages } from 'lucide-react';
 
 const LandingPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { playAsGuest, isAuthenticated, isGuest } = useAuth();
+  const { session } = useGame(); // <-- Använd session från GameContext
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    // Om redan inloggad eller gäst, gå till dashboard
-    if (isAuthenticated || isGuest) {
+    // Om en session redan finns, gå direkt till dashboard
+    if (session) {
       navigate('/dashboard');
     }
 
-    // Visa content efter kort delay
     const timer = setTimeout(() => setShowContent(true), 500);
     return () => clearTimeout(timer);
-  }, [isAuthenticated, isGuest, navigate]);
+  }, [session, navigate]);
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'sv' ? 'en' : 'sv';
     i18n.changeLanguage(newLang);
   };
 
-  const handlePlayAsGuest = () => {
-    playAsGuest();
-    navigate('/dashboard');
+  const handleStartGame = () => {
+    // Navigera till Setup-sidan där man väljer namn/avatar
+    navigate('/setup');
   };
 
   return (
@@ -58,7 +57,7 @@ const LandingPage = () => {
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
-        {/* Logo/Title with Typewriter Effect */}
+        {/* Logo/Title */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -81,7 +80,7 @@ const LandingPage = () => {
           </motion.p>
         </motion.div>
 
-        {/* Tagline with Animation */}
+        {/* Tagline */}
         {showContent && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -109,18 +108,18 @@ const LandingPage = () => {
             <motion.button
               whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(212,175,55,0.6)' }}
               whileTap={{ scale: 0.95 }}
-              onClick={handlePlayAsGuest}
+              onClick={handleStartGame}
               className="btn-primary text-2xl px-16 py-6 font-noir tracking-wider"
             >
               🕵️ {i18n.language === 'sv' ? 'STARTA NYTT SPEL' : 'START NEW GAME'}
             </motion.button>
             <p className="text-sm text-gray-500 mt-2 font-detective">
-              {i18n.language === 'sv' ? 'Ingen registrering krävs - börja spela direkt!' : 'No registration required - start playing immediately!'}
+              {i18n.language === 'sv' ? 'Ingen registrering krävs - spela direkt!' : 'No registration required - play instantly!'}
             </p>
           </motion.div>
         )}
 
-        {/* Footer Decoration */}
+        {/* Footer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -128,13 +127,10 @@ const LandingPage = () => {
           className="absolute bottom-8 left-0 right-0 text-center"
         >
           <div className="text-noir-accent text-6xl">▼</div>
-          <p className="text-gray-600 text-sm mt-2 font-detective">
-            {i18n.language === 'sv' ? 'Sanningen väntar i mörkret...' : 'Truth awaits in the darkness...'}
-          </p>
         </motion.div>
       </div>
 
-      {/* Noir Film Grain Effect */}
+      {/* Noise Filter */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-repeat"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`

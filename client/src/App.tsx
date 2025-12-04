@@ -1,53 +1,62 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { useAuth } from './contexts/GameContext';
+import { useGame } from './contexts/GameContext'; // <-- Ändrad import
 import LandingPage from './pages/LandingPage';
+import SetupPage from './pages/SetupPage';
 import Dashboard from './pages/Dashboard';
 import CasePage from './pages/CasePage';
 import InterrogationPage from './pages/InterrogationPage';
 
 function App() {
-  const { isAuthenticated, isGuest } = useAuth();
+  const { session } = useGame(); // <-- Använd useGame och session
 
-  // Helper för protected routes
-  const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-    if (!isAuthenticated && !isGuest) {
+  // Helper för att skydda routes (kräver en aktiv spelsession)
+  const RequireSession = ({ children }: { children: ReactNode }) => {
+    if (!session) {
       return <Navigate to="/" replace />;
     }
     return children;
   };
 
   return (
-    <div className="min-h-screen bg-noir-darkest">
+    <div className="min-h-screen bg-noir-darkest text-gray-100 font-detective">
       <Routes>
+        {/* Startsida */}
         <Route path="/" element={<LandingPage />} />
 
+        {/* Ny sida: Välj namn och avatar */}
+        <Route path="/setup" element={<SetupPage />} />
+
+        {/* Skyddade sidor (Kräver session) */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <RequireSession>
               <Dashboard />
-            </ProtectedRoute>
+            </RequireSession>
           }
         />
 
         <Route
           path="/case/:caseId"
           element={
-            <ProtectedRoute>
+            <RequireSession>
               <CasePage />
-            </ProtectedRoute>
+            </RequireSession>
           }
         />
 
         <Route
           path="/interrogation/:sessionId"
           element={
-            <ProtectedRoute>
+            <RequireSession>
               <InterrogationPage />
-            </ProtectedRoute>
+            </RequireSession>
           }
         />
+        
+        {/* Fånga upp felaktiga länkar */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );
