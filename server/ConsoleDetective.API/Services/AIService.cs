@@ -263,31 +263,28 @@ Skriv på svenska.";
 
         // === Private Helpers ===
 
-        private string[] GetLocationsForCategory(string category) => category switch
+private string[] GetLocationsForCategory(string category) => category switch
         {
-            "Mord" => new[] { 
-                "Gamla biblioteket", 
-                "Öde industrilokal", 
-                "Herrgården vid sjön", 
-                "NBI/Handelsakademin" 
-            },
+            // Namnen här måste matchas av en fil i /images/locations/
+            // T.ex. "Centralbank" -> centralbank.png (efter normalisering)
             "Bankrån" => new[] { 
-                "Göteborgs Centralbank", 
-                "Swedbank", 
-                "Nordea", 
-                "Handelsbanken" 
+                "Centralbank", // Matchar centralbank.png
+            },
+            "Mord" => new[] { 
+                "Herrgården", // Matchar herrgarden.png
+                "NBI",        // Matchar nbi.png
+                "Industrilokal" // Matchar industrilokal.png
             },
             "Inbrott" => new[] { 
-                "Stadshuset", 
-                "Villa Solbacken", 
-                "Teknikaffären", 
-                "Skolans lärarrum" 
+                "Stadshuset",     // Matchar stadshuset.png
+                "Teknikaffären",  // Matchar teknikaffaren.png
+                "Villan"          // Matchar villa.png
             },
             "Otrohet" => new[] { 
-                "Hotell Aurora", 
-                "Restaurang Bella Notte", 
-                "Lägenheten på Linnégatan", 
-                "Strandpromenaden" 
+                "Hotell",            // Matchar hotell.png
+                "Restaurang",        // Matchar restaurang.png
+                "Lägenheten",        // Matchar lagenheten.png
+                "Strandpromenaden"   // Matchar strandpromenaden.png
             },
             _ => new[] { "Okänd plats" }
         };

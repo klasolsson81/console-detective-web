@@ -16,9 +16,15 @@ import {
 
 // Helper function to get image path with fallback
 const getImagePath = (folder: 'suspects' | 'locations', name: string) => {
-  // Normalize name: remove spaces, convert to lowercase
-  const normalizedName = name.toLowerCase().replace(/\s+/g, '_');
-  return `/images/${folder}/${normalizedName}.jpg`;
+  // Normalize name: remove spaces, convert to lowercase, handle special chars
+  // Ex: "Teknikaffären" -> "teknikaffaren"
+  const normalizedName = name.toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[åä]/g, 'a') // Ersätt å,ä med a för att matcha filnamn
+    .replace(/ö/g, 'o');   // Ersätt ö med o
+    
+  // OBS: Ändrat till .png för att matcha dina filer!
+  return `/images/${folder}/${normalizedName}.png`;
 };
 
 const CasePage = () => {

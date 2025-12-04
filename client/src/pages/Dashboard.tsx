@@ -56,14 +56,18 @@ const Dashboard = () => {
     if (!selectedCategory) return;
 
     setCreatingCase(true);
+    // Vi stänger inte modalen här, utan låter overlayen ta över
+    
     try {
       const newCase = await caseAPI.createCase(selectedCategory);
       navigate(`/case/${newCase.id}`);
     } catch (error) {
       console.error('Failed to create case:', error);
-    } finally {
-      setCreatingCase(false);
+      setCreatingCase(false); // Stoppa laddningen om det blir fel
+      alert("Något gick fel vid skapandet av fallet. Försök igen.");
     }
+    // Vi sätter inte setCreatingCase(false) i success-fallet 
+    // eftersom vi navigerar bort direkt.
   };
 
   const toggleLanguage = () => {
@@ -76,7 +80,7 @@ const Dashboard = () => {
   const totalPoints = isGuest ? 0 : (user?.points || 0);
 
   return (
-    <div className="min-h-screen bg-noir-darkest">
+    <div className="min-h-screen bg-noir-darkest relative">
       {/* Header */}
       <header className="bg-noir-darker border-b border-gray-800 sticky top-0 z-40 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -255,7 +259,7 @@ const Dashboard = () => {
       </div>
 
       {/* New Case Modal */}
-      {showNewCaseModal && (
+      {showNewCaseModal && !creatingCase && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -295,12 +299,35 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={handleCreateCase}
-                disabled={!selectedCategory || creatingCase}
+                disabled={!selectedCategory}
                 className="btn-primary flex-1"
               >
-                {creatingCase ? t('case.generating') : t('common.confirm')}
+                {t('common.confirm')}
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* --- LOADING OVERLAY --- 
+          Detta visas när creatingCase är true, och täcker hela skärmen 
+      */}
+      {creatingCase && (
+        <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
+            <div className="w-20 h-20 border-4 border-noir-accent border-t-transparent rounded-full animate-spin mx-auto mb-8 shadow-lg shadow-noir-accent/20"></div>
+            <h2 className="text-4xl font-noir text-noir-accent mb-4 animate-pulse">
+              {t('case.generating')}...
+            </h2>
+            <p className="text-gray-400 font-detective max-w-md mx-auto text-lg leading-relaxed">
+              AI-detektiven samlar bevis, intervjuar vittnen och säkrar brottsplatsen.
+              <br/>
+              <span className="text-sm text-gray-600 mt-2 block">(Detta kan ta några sekunder)</span>
+            </p>
           </motion.div>
         </div>
       )}
