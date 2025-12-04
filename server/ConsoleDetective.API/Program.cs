@@ -16,6 +16,7 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // === Database Setup ===
 // SQLite för utveckling, PostgreSQL för produktion
+// OBS: På Railway nollställs SQLite vid varje deploy.
 var connectionString = configuration.GetConnectionString("DefaultConnection") 
     ?? "Data Source=consoledetective.db";
 
@@ -64,10 +65,10 @@ builder.Services.AddCors(options =>
         {
             // I produktion: specifika origins
             policy.WithOrigins(
-    "https://*.vercel.app",
-    "https://*.railway.app",
-    "https://consoledetective.klasolsson.se" // <--- LÄGG TILL DENNA!
-)
+                "https://*.vercel.app",
+                "https://*.railway.app",
+                "https://consoledetective.klasolsson.se" // Din custom domain
+            )
             .SetIsOriginAllowedToAllowWildcardSubdomains()
             .AllowAnyMethod()
             .AllowAnyHeader()
@@ -143,21 +144,25 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger"; // Tillgänglig på /swagger
 });
 
-// Development-specifik middleware
+// --- MODIFIERAD FELHANTERING FÖR FELSÖKNING ---
+// Vi tvingar fram detaljerade fel även i produktion just nu.
+// Detta hjälper oss se varför servern kraschar istället för att bara visa 404.
+app.UseDeveloperExceptionPage(); 
+
+/* SPARA FÖR SENARE (När allt fungerar):
 if (app.Environment.IsDevelopment())
 {
-    // Visa detaljerade fel i development
     app.UseDeveloperExceptionPage();
 }
 else
 {
-    // Production error handling
     app.UseExceptionHandler("/error");
     // HSTS borttaget för Railway compatibility
 }
+*/
+// ----------------------------------------------
 
 // HTTPS Redirection - BORTTAGET för Railway
-// Railway's proxy hanterar HTTPS, applikationen använder HTTP internt
 // app.UseHttpsRedirection();
 
 // Authentication & Authorization
@@ -175,12 +180,11 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
 
-        if (app.Environment.IsDevelopment())
-        {
-            // Auto-migrate i development
-            context.Database.Migrate();
-            Console.WriteLine("✅ Databas migrerad");
-        }
+        // Vi kör migration även i produktion för att säkerställa att tabeller finns
+        // OBS: Detta är riskabelt med SQLite på Railway då filen kan skrivas över
+        // men nödvändigt för att det ska funka initialt.
+        context.Database.Migrate();
+        Console.WriteLine("✅ Databas migrerad");
 
         // Skapa guest user om den inte finns
         var guestUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
@@ -210,6 +214,10 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Ett fel uppstod vid databasmigrering");
     }
 }
+
+// === HEALTH CHECK ===
+// Lägg till denna så du kan se att servern lever genom att gå till startsidan
+app.MapGet("/", () => "Console Detective API is running! 🕵️‍♂️");
 
 // === Start Application ===
 app.Run();
