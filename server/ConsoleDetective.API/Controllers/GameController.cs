@@ -24,26 +24,26 @@ namespace ConsoleDetective.API.Controllers
         [HttpPost("start-session")]
         public async Task<ActionResult> StartSession()
         {
-            // Skapa ett unikt ID för denna spelsession (för frontend chatten)
+            // Skapa ett unikt ID för frontend-sessionen (chatt, state, etc)
             var sessionId = Guid.NewGuid().ToString();
             
             var categories = new[] { "Mord", "Bankrån", "Inbrott", "Otrohet" };
 
-            // FIX: Vi skickar "guest-user" som userId istället för sessionId.
-            // Detta gör att databasen kopplar fallen till vår statiska gäst-användare
-            // så att Foreign Key-constraint inte kraschar.
+            // === FIXEN ÄR HÄR ===
+            // Vi anger "guest-user" som userId.
+            // Då kopplas alla nya fall till vår statiska gäst-användare i databasen.
             var tasks = categories.Select(async category => 
             {
                 var generatedData = await _aiService.GenerateCaseAsync(category);
-                // VIKTIGT: Första parametern är userId ("guest-user"), andra är datan
                 return await _caseService.CreateCaseAsync("guest-user", generatedData);
             });
+            // ====================
 
             var cases = await Task.WhenAll(tasks);
 
             return Ok(new 
             { 
-                sessionId, // Frontend får fortfarande sitt unika session ID
+                sessionId, 
                 cases = cases.Select(c => new { 
                     c.Id, 
                     c.Title, 

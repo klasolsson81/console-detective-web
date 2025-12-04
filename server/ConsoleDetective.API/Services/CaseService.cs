@@ -9,7 +9,6 @@ namespace ConsoleDetective.API.Services
         private readonly AppDbContext _context;
         private readonly AIService _aiService;
 
-        // Ett statiskt ID för alla gästspelare
         private readonly Guid _guestUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
         public CaseService(AppDbContext context, AIService aiService)
@@ -27,18 +26,16 @@ namespace ConsoleDetective.API.Services
             return Guid.Parse(userId);
         }
 
-        // ==================== SKAPA NYTT FALL (MED FIX) ====================
         public async Task<Case> CreateCaseAsync(string userId, GeneratedCaseData generatedData)
         {
             var userGuid = ParseUserId(userId);
             
-            // --- FIX FÖR ATT UNDVIKA KRASCH ---
+            // Säkerställ att gäst-användaren finns
             if (userId == "guest-user")
             {
                 var guestExists = await _context.Users.AnyAsync(u => u.Id == userGuid);
                 if (!guestExists)
                 {
-                    // Skapa gäst-användaren om den saknas
                     var guestUser = new User
                     {
                         Id = userGuid,
@@ -51,7 +48,6 @@ namespace ConsoleDetective.API.Services
                     await _context.SaveChangesAsync();
                 }
             }
-            // ----------------------------------
 
             var newCase = new Case
             {
@@ -79,7 +75,6 @@ namespace ConsoleDetective.API.Services
             return newCase;
         }
 
-        // ==================== HÄMTA ANVÄNDARENS FALL ====================
         public async Task<List<Case>> GetUserCasesAsync(string userId)
         {
             var userGuid = ParseUserId(userId);
@@ -91,7 +86,6 @@ namespace ConsoleDetective.API.Services
                 .ToListAsync();
         }
 
-        // ==================== HÄMTA SPECIFIKT FALL ====================
         public async Task<Case?> GetCaseByIdAsync(Guid caseId, string userId)
         {
             if (userId == "guest-user") 
@@ -111,7 +105,6 @@ namespace ConsoleDetective.API.Services
                 .FirstOrDefaultAsync(c => c.Id == caseId && c.UserId == userGuid);
         }
 
-        // ==================== LÄGG TILL LEDTRÅD ====================
         public async Task<Clue> AddClueAsync(Guid caseId, string clueText, string type = "Investigation")
         {
             var clue = new Clue
@@ -127,7 +120,6 @@ namespace ConsoleDetective.API.Services
             return clue;
         }
 
-        // ==================== TILLDELA LEDTRÅD ====================
         public async Task<bool> AssignClueToSuspectAsync(Guid clueId, string suspectName)
         {
             var clue = await _context.Clues.FindAsync(clueId);
@@ -138,18 +130,25 @@ namespace ConsoleDetective.API.Services
             return true;
         }
 
-        // ==================== GÖR ANKLAGELSE ====================
         public async Task<(bool IsCorrect, int PointsChange, string GuiltyParty)> MakeAccusationAsync(
             Guid caseId,
             string userId,
             string accusedSuspect)
         {
+            // Här behöver vi inte kolla userId strikt om det är guest-mode
+            // eftersom GameController nu skapar fallen åt guest-user.
+            var userGuid = ParseUserId(userId);
+
             var caseData = await _context.Cases
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.Id == caseId);
 
             if (caseData == null)
-                throw new InvalidOperationException("Fall hittades inte");
+                throw new InvalidOperationException("Fall hittades inte i databasen.");
+
+            // Valfri säkerhetskoll: Om det inte är gästläge, kolla ägare
+            if (userId != "guest-user" && caseData.UserId != userGuid)
+                throw new InvalidOperationException("Du har inte behörighet till detta fall.");
 
             if (caseData.IsCompleted)
                 throw new InvalidOperationException("Fallet är redan avslutat");
@@ -174,7 +173,6 @@ namespace ConsoleDetective.API.Services
             return (isCorrect, pointsChange, caseData.Guilty);
         }
 
-        // ==================== STATISTIK ====================
         public async Task<UserStatistics> GetUserStatisticsAsync(string userId)
         {
             var userGuid = ParseUserId(userId);
@@ -196,7 +194,7 @@ namespace ConsoleDetective.API.Services
         }
     }
 
-    // ==================== HÄR LIGGER KLASSEN SOM SAKNADES ====================
+    // Statistiken - Nu ligger den säkert här
     public class UserStatistics
     {
         public int TotalCases { get; set; }
