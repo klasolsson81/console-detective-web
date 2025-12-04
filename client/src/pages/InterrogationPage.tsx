@@ -4,7 +4,16 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { chatAPI } from '../services/api';
 import { ChatMessage } from '../types';
-import { ArrowLeft, Send, User, Bot, AlertTriangle, Loader } from 'lucide-react';
+import { ArrowLeft, Send, AlertTriangle, Loader } from 'lucide-react';
+
+// Helper för bilder (samma som i CasePage)
+const getImagePath = (name: string) => {
+  const normalizedName = name.toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[åä]/g, 'a')
+    .replace(/ö/g, 'o');
+  return `/images/suspects/${normalizedName}.png`;
+};
 
 const InterrogationPage = () => {
   const { t } = useTranslation();
@@ -15,10 +24,9 @@ const InterrogationPage = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [suspectName, setSuspectName] = useState('');
-  const [loading, setLoading] = useState(true); // Ny loading state
+  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // === NY LOGIK: Ladda sessionen på riktigt ===
   useEffect(() => {
     const loadSession = async () => {
       if (!sessionId) return;
@@ -28,7 +36,6 @@ const InterrogationPage = () => {
         setMessages(sessionData.messages || []);
       } catch (error) {
         console.error("Kunde inte ladda förhör:", error);
-        // Om sessionen inte finns, gå tillbaka
         navigate('/dashboard'); 
       } finally {
         setLoading(false);
@@ -37,7 +44,6 @@ const InterrogationPage = () => {
 
     loadSession();
   }, [sessionId, navigate]);
-  // ============================================
 
   useEffect(() => {
     scrollToBottom();
@@ -55,7 +61,6 @@ const InterrogationPage = () => {
     setInputMessage('');
     setSending(true);
 
-    // Optimistisk uppdatering: Visa användarens meddelande direkt
     const tempId = Date.now().toString();
     const newUserMessage: ChatMessage = {
       id: tempId,
@@ -66,10 +71,7 @@ const InterrogationPage = () => {
     setMessages((prev) => [...prev, newUserMessage]);
 
     try {
-      // Skicka till backend
       const response = await chatAPI.sendMessage(sessionId!, userMessageContent);
-
-      // Backend returnerar nu AI-svaret direkt
       const aiMessage: ChatMessage = {
         id: response.id || (Date.now() + 1).toString(),
         role: 'assistant',
@@ -77,11 +79,9 @@ const InterrogationPage = () => {
         emotionalTone: response.emotionalTone,
         timestamp: response.timestamp || new Date().toISOString(),
       };
-      
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Ta bort meddelandet om det misslyckades, eller visa fel
     } finally {
       setSending(false);
     }
@@ -116,9 +116,19 @@ const InterrogationPage = () => {
           <button onClick={() => navigate(-1)} className="btn-ghost flex items-center gap-2">
             <ArrowLeft size={20} /> {t('common.back')}
           </button>
-          <h1 className="text-2xl font-noir text-noir-accent">
-            {t('interrogation.title')} <span className="text-gray-100">{suspectName}</span>
-          </h1>
+          <div className="flex items-center gap-3">
+             {/* Liten avatar i headern */}
+             <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600">
+                <img 
+                  src={getImagePath(suspectName)} 
+                  alt={suspectName}
+                  className="w-full h-full object-cover"
+                />
+             </div>
+             <h1 className="text-2xl font-noir text-noir-accent">
+               Förhör: <span className="text-gray-100">{suspectName}</span>
+             </h1>
+          </div>
           <button onClick={() => navigate(-1)} className="btn-secondary text-sm px-4 py-2">
             {t('interrogation.endInterrogation')}
           </button>
@@ -129,7 +139,13 @@ const InterrogationPage = () => {
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-8 max-w-4xl">
         {messages.length === 0 ? (
           <div className="text-center py-12">
-            <User className="text-gray-600 mx-auto mb-4" size={64} />
+            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-noir-accent mx-auto mb-6">
+                <img 
+                  src={getImagePath(suspectName)} 
+                  alt={suspectName}
+                  className="w-full h-full object-cover"
+                />
+            </div>
             <p className="text-gray-400 text-lg">
               Du står öga mot öga med {suspectName}.
             </p>
@@ -144,22 +160,27 @@ const InterrogationPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
               >
-                <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
-                    message.role === 'user' ? 'bg-noir-accent' : 'bg-noir-dark border border-gray-700'
+                {/* AVATARER I CHATTEN */}
+                <div className={`flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border flex items-center justify-center ${
+                    message.role === 'user' ? 'border-noir-accent' : 'border-gray-700'
                   }`}>
-                  {message.role === 'user' ? 
-                    <User size={24} className="text-noir-darkest" /> : 
-                    <Bot size={24} className="text-gray-400" />}
+                  <img 
+                    src={message.role === 'user' ? '/images/logga.png' : getImagePath(suspectName)} 
+                    alt={message.role}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }} // Dölj om bild saknas
+                  />
                 </div>
 
                 <div className={`flex-1 max-w-2xl ${message.role === 'user' ? 'text-right' : ''}`}>
                   <div className={`inline-block px-6 py-4 rounded-lg ${
                       message.role === 'user' ? 'bg-noir-accent text-noir-darkest' : 'bg-noir-dark border border-gray-700 text-gray-100'
                     }`}>
-                    <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    <p className="leading-relaxed whitespace-pre-wrap text-left">{message.content}</p>
                   </div>
                   {message.emotionalTone && message.role === 'assistant' && (
-                    <div className={`mt-2 text-sm ${getEmotionalToneColor(message.emotionalTone)}`}>
+                    <div className={`mt-2 text-sm flex items-center gap-1 ${getEmotionalToneColor(message.emotionalTone)}`}>
+                       {message.emotionalTone === 'nervous' || message.emotionalTone === 'defensive' ? <AlertTriangle size={12} /> : null}
                        Tonläge: {message.emotionalTone}
                     </div>
                   )}
@@ -168,8 +189,11 @@ const InterrogationPage = () => {
             ))}
             <div ref={messagesEndRef} />
             {sending && (
-               <div className="text-gray-500 text-sm italic ml-16">
-                 {suspectName} tänker...
+               <div className="text-gray-500 text-sm italic ml-16 flex items-center gap-2">
+                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-75" />
+                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-150" />
+                 {suspectName} skriver...
                </div>
             )}
           </div>

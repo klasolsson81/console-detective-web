@@ -15,6 +15,9 @@ namespace ConsoleDetective.API.Services
         private readonly OpenAIClient _client;
         private readonly ILogger<AIService> _logger;
 
+        // Vi hårdkodar misstänkta här så vi kan återanvända listan överallt
+        private readonly string[] _validSuspects = new[] { "Nemo", "Anna", "Frida", "Carlos" };
+
         public AIService(IConfiguration configuration, ILogger<AIService> logger)
         {
             var apiKey = configuration["OpenAI:ApiKey"] 
@@ -25,41 +28,53 @@ namespace ConsoleDetective.API.Services
         }
 
         /// <summary>
-        /// Genererar ett nytt detektivfall med AI
+        /// Genererar ett nytt detektivfall med AI - Nu med högre svårighetsgrad
         /// </summary>
         public async Task<GeneratedCaseData> GenerateCaseAsync(string category)
         {
             var locations = GetLocationsForCategory(category);
-            var suspects = new[] { "Nemo", "Anna", "Frida", "Carlos" };
             var location = locations[Random.Shared.Next(locations.Length)];
+            
+            var suspectsString = string.Join(", ", _validSuspects);
 
-            // OPTIMERAD PROMPT FÖR SNABBARE SVAR
-            string prompt = $@"Kategori: {category}. Plats: {location}.
-Misstänkta: {string.Join(", ", suspects)}.
-Välj EN skyldig.
+            string prompt = $@"
+DU ÄR EN MÄSTARE PÅ NOIR-MYSTERIER.
+Din uppgift: Skapa ett utmanande mordmysterium/brott som kräver deduktion.
 
-Skapa ett kort noir-mysterium (max 3-4 meningar).
-Inkludera 2 ledtrådar (en pekar på den skyldige, en falsk).
+PARAMETRAR:
+- Kategori: {category}
+- Plats: {location}
+- Möjliga misstänkta (ANVÄND ENDAST DESSA): {suspectsString}
+- Välj EN skyldig från listan.
 
-SVARA ENDAST JSON:
+REGLER FÖR FALLET:
+1. Svårighetsgrad: HÖG. Gör det inte uppenbart.
+2. Den skyldige ska ha ett motiv som inte syns direkt.
+3. Skapa 2 ""InitialClues"":
+   - En ledtråd ska vara vag men korrekt (pekar mot den skyldige).
+   - En ledtråd ska vara en ""Red Herring"" (falskt spår) som pekar mot en oskyldig.
+4. Beskrivningen ska vara atmosfärisk, mörk och 'gritty'.
+
+FORMAT:
+Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
 {{
-  ""description"": ""Kort berättelse..."",
-  ""guilty"": ""Namn"",
-  ""initialClues"": [""Ledtråd 1"", ""Ledtråd 2""]
+  ""description"": ""Atmosfärisk berättelse om brottet (max 4 meningar)..."",
+  ""guilty"": ""Namn på den skyldige (MÅSTE vara en av: {suspectsString})"",
+  ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
 }}";
 
             try
             {
-                var chat = _client.GetChatClient("gpt-5-nano");
+                var chat = _client.GetChatClient("gpt-4o"); 
+                
                 var response = await chat.CompleteChatAsync([
-                    new SystemChatMessage("Du är en professionell noir-författare och mysterieskapare."),
+                    new SystemChatMessage("Du är en expert på att skriva deckargåtor."),
                     new UserChatMessage(prompt)
                 ]);
 
                 var rawContent = string.Join("\n", response.Value.Content.Select(c => c.Text));
                 
-                // --- NY ROBUST PARSING ---
-                // Hitta start och slut på JSON-objektet för att ignorera eventuell pratig text från AI:n
+                // Robust JSON parsing
                 int startIndex = rawContent.IndexOf('{');
                 int endIndex = rawContent.LastIndexOf('}');
 
@@ -67,17 +82,17 @@ SVARA ENDAST JSON:
                     throw new InvalidOperationException("AI returnerade ingen giltig JSON");
 
                 var jsonString = rawContent.Substring(startIndex, endIndex - startIndex + 1);
-                // -------------------------
-
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true // Hanterar om AI skriver "Description" eller "description"
-                };
-
+                
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var caseData = JsonSerializer.Deserialize<GeneratedCaseJson>(jsonString, options);
                 
-                if (caseData == null)
-                    throw new InvalidOperationException("Kunde inte tolka AI-svar");
+                if (caseData == null) throw new InvalidOperationException("Kunde inte tolka AI-svar");
+
+                // Fallback om AI hallucinerar ett namn som inte finns
+                if (!_validSuspects.Contains(caseData.Guilty))
+                {
+                    caseData.Guilty = _validSuspects[0];
+                }
 
                 return new GeneratedCaseData
                 {
@@ -85,7 +100,7 @@ SVARA ENDAST JSON:
                     Category = category,
                     Location = location,
                     Description = caseData.Description,
-                    PossibleSuspects = suspects.ToList(),
+                    PossibleSuspects = _validSuspects.ToList(),
                     Guilty = caseData.Guilty,
                     InitialClues = caseData.InitialClues
                 };
@@ -98,31 +113,41 @@ SVARA ENDAST JSON:
         }
 
         /// <summary>
-        /// Genererar en ledtråd när spelaren undersöker brottsplatsen
+        /// Genererar en ledtråd vid undersökning
         /// </summary>
         public async Task<string> GenerateInvestigationClueAsync(Case caseData)
         {
-            string prompt = $@"Du är berättarrösten i ett noir-detektivspel.
+            var clueTypes = new[] 
+            { 
+                "Ett fysiskt bevis som tappats", 
+                "En kvarglömd lapp eller digitalt spår", 
+                "Bara en atmosfärisk iakttagelse (inget bevis)", 
+                "Ett vilseledande spår (något som ser misstänkt ut men är oskyldigt)" 
+            };
+            var selectedType = clueTypes[Random.Shared.Next(clueTypes.Length)];
 
+            string prompt = $@"
 SITUATION:
 Brott: {caseData.Title}
 Plats: {caseData.Location}
-Misstänkta: {string.Join(", ", caseData.PossibleSuspects)}
 Skyldig: {caseData.Guilty}
 
 UPPGIFT:
-Spelaren undersöker brottsplatsen. Ge en kort (2-3 meningar) beskrivning av vad som hittas.
-- Om relevant, inkludera en subtil ledtråd som kan kopplas till den skyldige
-- Använd noir-estetik och atmosfär
-- Skriv på svenska
+Spelaren undersöker rummet noggrant.
+Skriv vad de hittar. Det ska vara av typen: ""{selectedType}"".
 
-Svara ENDAST med ledtrådstexten, ingen JSON.";
+VIKTIGT:
+- Var kortfattad (max 2 meningar).
+- Om det är en ledtråd, gör den SUBTIL. Skriv inte ""Detta bevisar att X gjorde det"".
+- Använd noir-språk.
+
+Svara ENDAST med texten.";
 
             try
             {
                 var chat = _client.GetChatClient("gpt-4o-mini");
                 var response = await chat.CompleteChatAsync([
-                    new SystemChatMessage("Du är en noir-berättare med känsla för detaljer och atmosfär."),
+                    new SystemChatMessage("Du är en noir-berättare."),
                     new UserChatMessage(prompt)
                 ]);
 
@@ -136,7 +161,7 @@ Svara ENDAST med ledtrådstexten, ingen JSON.";
         }
 
         /// <summary>
-        /// Genererar AI-svar under ett förhör (med kontext)
+        /// Genererar AI-svar under förhör
         /// </summary>
         public async Task<ChatMessageDto> GenerateInterrogationResponseAsync(
             Case caseData,
@@ -145,47 +170,61 @@ Svara ENDAST med ledtrådstexten, ingen JSON.";
             string currentQuestion)
         {
             bool isGuilty = suspectName.Equals(caseData.Guilty, StringComparison.OrdinalIgnoreCase);
+            var otherSuspects = _validSuspects.Where(s => s != suspectName).ToList();
+            var scapegoat = otherSuspects[Random.Shared.Next(otherSuspects.Count)];
 
-            // Bygg konversationshistorik för kontext
-            var chatMessages = new List<OpenAIChatMessage>
+            string behaviorInstruction;
+            if (isGuilty)
             {
-                new SystemChatMessage($@"Du är {suspectName} i ett noir-detektivförhör.
-
-SITUATION:
-- Brott: {caseData.Title}
-- Plats: {caseData.Location}
-- Du är: {(isGuilty ? "SKYLDIG" : "OSKYLDIG")}
-
-BETEENDE:
-{(isGuilty 
-    ? @"- Var nervös och undvikande
-- Ge motsägelsefulla svar
-- Försök skylla på någon annan
-- Läck småningom ledtrådar genom nervositet" 
-    : @"- Var trovärdig och sammanhängande
-- Svara direkt på frågor
-- Ge konsekvent information
-- Visa lätt irritation över att vara misstänkt")}
-
-STIL:
-- Svara kort (1-3 meningar)
-- Använd karaktärens röst
-- Skriv på svenska
-- Inkludera känslomässiga uttryck i parenteser, t.ex. (nervöst), (ilsket)
-
-Svara ENDAST som karaktären, ingen meta-text.")
-            };
-
-            // Lägg till tidigare meddelanden för kontext
-            foreach (var msg in conversationHistory)
+                behaviorInstruction = $@"
+DU ÄR SKYLDIG.
+Ditt mål: Bli inte påkommen.
+Strategi: 
+- Ljug trovärdigt.
+- Om du blir pressad, skyll subtilt på {scapegoat}.
+- Du kan vara: Kall/Beräknande, Överdrivet hjälpsam, eller Defensiv.";
+            }
+            else
             {
-                if (msg.Role == "user")
-                    chatMessages.Add(new UserChatMessage(msg.Content));
-                else
-                    chatMessages.Add(new AssistantChatMessage(msg.Content));
+                behaviorInstruction = $@"
+DU ÄR OSKYLDIG.
+Ditt mål: Bevisa din oskuld.
+Strategi:
+- Berätta sanningen.
+- Du kan vara nervös eller irriterad.
+- Du litar inte på {scapegoat}.";
             }
 
-            // Lägg till aktuell fråga
+            string systemPrompt = $@"
+Du spelar rollen av {suspectName} i ett förhör.
+
+VÄRLDSREGLER (VIKTIGT):
+1. De ENDA personerna som existerar är: {string.Join(", ", _validSuspects)}.
+2. Hitta ALDRIG på nya namn.
+3. Offret är den som beskrivs i fallet.
+
+KONTEXT:
+Brott: {caseData.Title} på {caseData.Location}.
+{behaviorInstruction}
+
+INSTRUKTIONER FÖR SVARET:
+- Svara kort (1-3 meningar).
+- Använd talspråk och karaktärens röst.
+- Skriv på svenska.
+- Inkludera känslo-tagg först i parentes, ex: (nervös), (arg).";
+
+            var chatMessages = new List<OpenAIChatMessage>
+            {
+                new SystemChatMessage(systemPrompt)
+            };
+
+            var recentHistory = conversationHistory.TakeLast(6);
+            foreach (var msg in recentHistory)
+            {
+                if (msg.Role == "user") chatMessages.Add(new UserChatMessage(msg.Content));
+                else chatMessages.Add(new AssistantChatMessage(msg.Content));
+            }
+
             chatMessages.Add(new UserChatMessage(currentQuestion));
 
             try
@@ -193,10 +232,21 @@ Svara ENDAST som karaktären, ingen meta-text.")
                 var chat = _client.GetChatClient("gpt-4o-mini");
                 var response = await chat.CompleteChatAsync(chatMessages);
 
-                var content = string.Join("\n", response.Value.Content.Select(c => c.Text)).Trim();
+                var fullContent = string.Join("\n", response.Value.Content.Select(c => c.Text)).Trim();
+                string tone = "neutral";
+                string content = fullContent;
 
-                // Analysera känslomässig ton
-                var tone = AnalyzeEmotionalTone(content, isGuilty);
+                if (fullContent.StartsWith("("))
+                {
+                    int endParen = fullContent.IndexOf(")");
+                    if (endParen != -1)
+                    {
+                        tone = fullContent.Substring(1, endParen - 1).ToLower();
+                        content = fullContent.Substring(endParen + 1).Trim();
+                    }
+                }
+
+                string mappedTone = MapEmotionalTone(tone);
 
                 return new ChatMessageDto
                 {
@@ -204,7 +254,7 @@ Svara ENDAST som karaktären, ingen meta-text.")
                     Role = "assistant",
                     Content = content,
                     Timestamp = DateTime.UtcNow,
-                    EmotionalTone = tone
+                    EmotionalTone = mappedTone
                 };
             }
             catch (Exception ex)
@@ -214,101 +264,48 @@ Svara ENDAST som karaktären, ingen meta-text.")
             }
         }
 
-        /// <summary>
-        /// Extraherar potentiella ledtrådar från konversationen
-        /// </summary>
-        public async Task<string?> ExtractClueFromConversationAsync(
-            string question, 
-            string answer)
+        public async Task<string?> ExtractClueFromConversationAsync(string question, string answer)
         {
-            string prompt = $@"Analysera följande förhörsutbyte:
+            string prompt = $@"
+Analysera dialogen:
+F: {question}
+S: {answer}
 
-FRÅGA: {question}
-SVAR: {answer}
-
-UPPGIFT:
-Om svaret innehåller värdefull information som kan vara en ledtråd, sammanfatta den i 1 mening.
-Om svaret INTE innehåller ny information, svara bara 'INGEN'.
-
-Skriv på svenska.";
-
+Innehåller svaret ett KONKRET bevis eller ett starkt alibi?
+Om JA: Sammanfatta det i en kort mening.
+Om NEJ: Svara ""INGEN"".";
+            
             try
             {
                 var chat = _client.GetChatClient("gpt-4o-mini");
-                var response = await chat.CompleteChatAsync([
-                    new SystemChatMessage("Du är en analytiker som identifierar viktiga ledtrådar."),
-                    new UserChatMessage(prompt)
-                ]);
-
+                var response = await chat.CompleteChatAsync([new UserChatMessage(prompt)]);
                 var result = string.Join("\n", response.Value.Content.Select(c => c.Text)).Trim();
-                
-                return result.Equals("INGEN", StringComparison.OrdinalIgnoreCase) 
-                    ? null 
-                    : result;
+                return result.ToUpper().Contains("INGEN") ? null : result;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fel vid extrahering av ledtråd");
-                return null;
-            }
+            catch { return null; }
         }
 
-        // === Private Helpers ===
+        // === Helpers ===
 
-private string[] GetLocationsForCategory(string category) => category switch
+        private string MapEmotionalTone(string rawTone)
         {
-            // Namnen här måste matchas av en fil i /images/locations/
-            // T.ex. "Centralbank" -> centralbank.png (efter normalisering)
-            "Bankrån" => new[] { 
-                "Centralbank", // Matchar centralbank.png
-            },
-            "Mord" => new[] { 
-                "Herrgården", // Matchar herrgarden.png
-                "NBI",        // Matchar nbi.png
-                "Industrilokal" // Matchar industrilokal.png
-            },
-            "Inbrott" => new[] { 
-                "Stadshuset",     // Matchar stadshuset.png
-                "Teknikaffären",  // Matchar teknikaffaren.png
-                "Villan"          // Matchar villa.png
-            },
-            "Otrohet" => new[] { 
-                "Hotell",            // Matchar hotell.png
-                "Restaurang",        // Matchar restaurang.png
-                "Lägenheten",        // Matchar lagenheten.png
-                "Strandpromenaden"   // Matchar strandpromenaden.png
-            },
+            if (rawTone.Contains("nervös") || rawTone.Contains("rädd") || rawTone.Contains("stressad")) return "nervous";
+            if (rawTone.Contains("arg") || rawTone.Contains("irriterad") || rawTone.Contains("sur")) return "irritated";
+            if (rawTone.Contains("lugn") || rawTone.Contains("säker") || rawTone.Contains("kall")) return "confident";
+            if (rawTone.Contains("defensiv") || rawTone.Contains("anklagande")) return "defensive";
+            return "neutral";
+        }
+
+        private string[] GetLocationsForCategory(string category) => category switch
+        {
+            "Bankrån" => new[] { "Centralbank" },
+            "Mord" => new[] { "Herrgården", "NBI", "Industrilokal" },
+            "Inbrott" => new[] { "Stadshuset", "Teknikaffären", "Villan" },
+            "Otrohet" => new[] { "Hotell", "Restaurang", "Lägenheten", "Strandpromenaden" },
             _ => new[] { "Okänd plats" }
         };
 
-        private string AnalyzeEmotionalTone(string content, bool isGuilty)
-        {
-            var contentLower = content.ToLower();
-            
-            if (isGuilty)
-            {
-                if (contentLower.Contains("jag") && contentLower.Contains("inte"))
-                    return "defensive";
-                if (contentLower.Contains("nervöst") || contentLower.Contains("vet inte"))
-                    return "nervous";
-                if (contentLower.Contains("kanske") || contentLower.Contains("tror"))
-                    return "evasive";
-                
-                return "tense";
-            }
-            else
-            {
-                if (contentLower.Contains("förbannat") || contentLower.Contains("ilsket"))
-                    return "irritated";
-                if (contentLower.Contains("naturligtvis") || contentLower.Contains("självklart"))
-                    return "confident";
-                
-                return "calm";
-            }
-        }
-
-        // === Data Classes ===
-
+        // Intern klass för JSON-parsing
         private class GeneratedCaseJson
         {
             public string Description { get; set; } = string.Empty;
@@ -317,7 +314,7 @@ private string[] GetLocationsForCategory(string category) => category switch
         }
     }
 
-    // === Public Data Transfer Object ===
+    // === Public DTO som används av andra klasser ===
     public class GeneratedCaseData
     {
         public string Title { get; set; } = string.Empty;

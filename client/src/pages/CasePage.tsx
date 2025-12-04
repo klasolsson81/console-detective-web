@@ -113,14 +113,14 @@ const CasePage = () => {
     );
   }
 
-  if (result) {
+if (result) {
     // Solution Result Screen
     return (
       <div className="min-h-screen bg-noir-darkest flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="card-noir p-12 text-center max-w-2xl"
+          className="card-noir p-12 text-center max-w-2xl w-full"
         >
           {result.isCorrect ? (
             <>
@@ -128,26 +128,45 @@ const CasePage = () => {
               <h1 className="text-5xl font-noir text-green-400 mb-4">
                 {t('solution.correct')}
               </h1>
+              <p className="text-xl text-gray-300 mb-8">
+                 Snyggt jobbat, detektiv. Rättvisan har skipats.
+              </p>
             </>
           ) : (
             <>
-              <div className="text-red-400 text-7xl mb-6">✗</div>
-              <h1 className="text-5xl font-noir text-red-400 mb-4">
+              <div className="text-red-400 text-7xl mb-4 font-noir">✗</div>
+              <h1 className="text-5xl font-noir text-red-400 mb-6">
                 {t('solution.incorrect')}
               </h1>
-              <p className="text-2xl text-gray-300 mb-6">
-                {t('solution.incorrect')} <span className="text-noir-accent font-bold">{caseData.guilty}</span>
-              </p>
+              
+              <div className="bg-noir-dark p-6 rounded border border-gray-700 mb-6">
+                  <p className="text-gray-400 text-sm uppercase tracking-widest mb-4">Den skyldige var</p>
+                  
+                  {/* BILD PÅ DEN SKYLDIGE */}
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-900 mx-auto mb-4">
+                    <img 
+                        src={getImagePath('suspects', result.guiltyParty)} 
+                        alt={result.guiltyParty}
+                        className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all"
+                    />
+                  </div>
+                  
+                  <p className="text-3xl text-noir-accent font-noir">
+                    {result.guiltyParty}
+                  </p>
+              </div>
             </>
           )}
 
           <p className="text-xl text-gray-400 mb-8">
-            {t('solution.pointsEarned')}: <span className="text-noir-accent font-bold">{result.pointsEarned || 0}</span>
+            {t('solution.pointsEarned')}: <span className={result.pointsAwarded > 0 ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
+                {result.pointsAwarded}
+            </span>
           </p>
 
           <button
             onClick={() => navigate('/dashboard')}
-            className="btn-primary"
+            className="btn-primary w-full"
           >
             {t('solution.backToDashboard')}
           </button>
