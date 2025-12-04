@@ -58,18 +58,31 @@ SVARA ENDAST med giltig JSON:
 
             try
             {
-                var chat = _client.GetChatClient("gpt-4o-mini");
+                var chat = _client.GetChatClient("GPT-5 mini");
                 var response = await chat.CompleteChatAsync([
                     new SystemChatMessage("Du är en professionell noir-författare och mysterieskapare."),
                     new UserChatMessage(prompt)
                 ]);
 
-                var result = string.Join("\n", response.Value.Content.Select(c => c.Text))
-                    .Replace("```json", "")
-                    .Replace("```", "")
-                    .Trim();
+                var rawContent = string.Join("\n", response.Value.Content.Select(c => c.Text));
+                
+                // --- NY ROBUST PARSING ---
+                // Hitta start och slut på JSON-objektet för att ignorera eventuell pratig text från AI:n
+                int startIndex = rawContent.IndexOf('{');
+                int endIndex = rawContent.LastIndexOf('}');
 
-                var caseData = JsonSerializer.Deserialize<GeneratedCaseJson>(result);
+                if (startIndex == -1 || endIndex == -1)
+                    throw new InvalidOperationException("AI returnerade ingen giltig JSON");
+
+                var jsonString = rawContent.Substring(startIndex, endIndex - startIndex + 1);
+                // -------------------------
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true // Hanterar om AI skriver "Description" eller "description"
+                };
+
+                var caseData = JsonSerializer.Deserialize<GeneratedCaseJson>(jsonString, options);
                 
                 if (caseData == null)
                     throw new InvalidOperationException("Kunde inte tolka AI-svar");
