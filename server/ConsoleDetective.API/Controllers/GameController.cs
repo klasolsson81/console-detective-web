@@ -55,25 +55,21 @@ namespace ConsoleDetective.API.Controllers
             });
         }
 
-        // === HÄR ÄR FIXEN FÖR 500-FELET ===
         [HttpGet("leaderboard")]
         public async Task<ActionResult> GetLeaderboard()
         {
             try
             {
-                // Vi hämtar datan och hanterar eventuella NULL-värden direkt
                 var rawList = await _context.Leaderboard
                     .OrderByDescending(e => e.Score)
                     .Take(10)
                     .ToListAsync();
 
-                // Mappa om listan säkert så att Avatar aldrig är null
                 var safeList = rawList.Select(e => new 
                 {
                     e.Id,
                     e.PlayerName,
                     Score = e.Score,
-                    // Om Avatar är null/tom, sätt "man" som default
                     Avatar = string.IsNullOrEmpty(e.Avatar) ? "man" : e.Avatar,
                     e.CompletedAt
                 });
@@ -82,20 +78,34 @@ namespace ConsoleDetective.API.Controllers
             }
             catch (Exception ex)
             {
-                // Om något ändå går fel, returnera tom lista istället för att krascha appen
                 Console.WriteLine($"Leaderboard error: {ex.Message}");
                 return Ok(new List<object>());
             }
         }
 
+        // === HÄR ÄR FIXEN FÖR ATT SPARA TILL TOPPLISTAN ===
         [HttpPost("leaderboard")]
         public async Task<ActionResult> SubmitScore([FromBody] LeaderboardEntry entry)
         {
-            // Säkra upp så att avatar alltid har ett värde
+            // 1. Säkra upp ID (om det saknas, skapa nytt)
+            if (entry.Id == Guid.Empty) 
+            {
+                entry.Id = Guid.NewGuid();
+            }
+
+            // 2. Säkra upp Datum (Postgres kraschar av "år 0001")
+            if (entry.CompletedAt == default)
+            {
+                entry.CompletedAt = DateTime.UtcNow;
+            }
+
+            // 3. Säkra upp Avatar och Namn
             if (string.IsNullOrEmpty(entry.Avatar)) entry.Avatar = "man";
+            if (string.IsNullOrEmpty(entry.PlayerName)) entry.PlayerName = "Okänd";
             
             _context.Leaderboard.Add(entry);
             await _context.SaveChangesAsync();
+            
             return Ok(entry);
         }
     }
