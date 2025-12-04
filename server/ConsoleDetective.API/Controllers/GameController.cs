@@ -24,15 +24,17 @@ namespace ConsoleDetective.API.Controllers
         [HttpPost("start-session")]
         public async Task<ActionResult> StartSession()
         {
+            // 1. VIKTIGT: Se till att gäst-användaren finns INNAN vi gör något annat
+            await _caseService.EnsureGuestUserExistsAsync();
+
             var sessionId = Guid.NewGuid().ToString();
             var categories = new[] { "Mord", "Bankrån", "Inbrott", "Otrohet" };
 
-            // STEG 1: Generera all data parallellt (Snabbt, använder inte databasen)
+            // 2. Generera data parallellt (Snabbt)
             var generationTasks = categories.Select(category => _aiService.GenerateCaseAsync(category));
             var generatedDataList = await Task.WhenAll(generationTasks);
 
-            // STEG 2: Spara till databasen sekventiellt (Säkert, en i taget)
-            // Detta förhindrar kraschen "Parallel operations on DbContext"
+            // 3. Spara till DB sekventiellt (Säkert)
             var savedCases = new List<Case>();
             foreach (var data in generatedDataList)
             {
@@ -59,16 +61,24 @@ namespace ConsoleDetective.API.Controllers
         [HttpGet("leaderboard")]
         public async Task<ActionResult> GetLeaderboard()
         {
-            var topList = await _context.Leaderboard
-                .OrderByDescending(e => e.Score)
-                .Take(10)
-                .ToListAsync();
-            return Ok(topList);
+            // Enkel felhantering om leaderboard är tom
+            try {
+                var topList = await _context.Leaderboard
+                    .OrderByDescending(e => e.Score)
+                    .Take(10)
+                    .ToListAsync();
+                return Ok(topList);
+            } catch {
+                return Ok(new List<object>()); // Returnera tom lista istället för krasch
+            }
         }
 
         [HttpPost("leaderboard")]
         public async Task<ActionResult> SubmitScore([FromBody] LeaderboardEntry entry)
         {
+            // Säkra upp så att avatar alltid har ett värde
+            if (string.IsNullOrEmpty(entry.Avatar)) entry.Avatar = "man";
+            
             _context.Leaderboard.Add(entry);
             await _context.SaveChangesAsync();
             return Ok(entry);

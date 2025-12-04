@@ -3,7 +3,7 @@ import { GameSession } from '../types';
 
 interface GameContextType {
   session: GameSession | null;
-  startGame: (playerName: string, avatar: 'man' | 'woman', sessionData: any) => void;
+  startGame: (playerName: string, avatar: string, sessionData: any) => void;
   endGame: () => void;
   markCaseCompleted: (caseId: string, isSolved: boolean, pointsEarned: number) => void;
 }
@@ -12,13 +12,19 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<GameSession | null>(() => {
-    // 1. Rensa ALLTID localStorage för att undvika "zombie-data"
+    // 1. Rensa alltid localStorage (för att slippa gamla buggar)
     localStorage.removeItem('gameSession');
 
     // 2. Läs från sessionStorage
     const saved = sessionStorage.getItem('gameSession');
-    // FIX: "as GameSession" tystar TypeScript-felet vid inläsning
-    return saved ? (JSON.parse(saved) as GameSession) : null;
+    if (!saved) return null;
+
+    try {
+      return JSON.parse(saved) as GameSession;
+    } catch (e) {
+      console.error("Kunde inte läsa session", e);
+      return null;
+    }
   });
 
   useEffect(() => {
@@ -29,11 +35,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session]);
 
-  const startGame = (playerName: string, avatar: 'man' | 'woman', sessionData: any) => {
+  const startGame = (playerName: string, avatarInput: string, sessionData: any) => {
+    // SÄKERHETSKOLL: Tvinga avatar att vara 'man' eller 'woman'
+    const validAvatar: 'man' | 'woman' = (avatarInput === 'woman') ? 'woman' : 'man';
+
     const newSession: GameSession = {
       sessionId: sessionData.sessionId,
       playerName,
-      avatar, 
+      avatar: validAvatar, 
       score: 0,
       cases: sessionData.cases.map((c: any) => ({
         ...c,
