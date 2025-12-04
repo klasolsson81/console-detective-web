@@ -1,23 +1,25 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
-import { useGame } from './contexts/GameContext'; // <-- Ändrad import
+import { useGame } from './contexts/GameContext';
 import LandingPage from './pages/LandingPage';
 import SetupPage from './pages/SetupPage';
 import Dashboard from './pages/Dashboard';
 import CasePage from './pages/CasePage';
 import InterrogationPage from './pages/InterrogationPage';
 
+// === FIX: Flytta ut RequireSession hit ===
+// Nu är det en stabil komponent som inte återskapas varje gång App renderas om.
+const RequireSession = ({ children }: { children: ReactNode }) => {
+  const { session } = useGame();
+  
+  if (!session) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
 function App() {
-  const { session } = useGame(); // <-- Använd useGame och session
-
-  // Helper för att skydda routes (kräver en aktiv spelsession)
-  const RequireSession = ({ children }: { children: ReactNode }) => {
-    if (!session) {
-      return <Navigate to="/" replace />;
-    }
-    return children;
-  };
-
+  // Vi behöver inte hämta session här inne längre för skyddet
   return (
     <div className="min-h-screen bg-noir-darkest text-gray-100 font-detective">
       <Routes>
