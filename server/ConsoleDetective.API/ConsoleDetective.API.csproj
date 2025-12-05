@@ -22,6 +22,7 @@
 
     <!-- JWT Authentication -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
 
     <!-- OpenAI SDK -->
     <PackageReference Include="OpenAI" Version="2.5.0" />
