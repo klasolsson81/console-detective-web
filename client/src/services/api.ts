@@ -131,6 +131,17 @@ export const caseAPI = {
 
     return response.data;
   },
+
+  getCaseNarration: async (caseId: string) => {
+    // Narration måste alltid genereras via API (TTS)
+    try {
+      const response = await api.get(`/case/${caseId}/narration`);
+      return response.data.narrationAudio; // Base64 audio string
+    } catch (error) {
+      console.error('Failed to load narration:', error);
+      return null;
+    }
+  },
 };
 
 // === CHAT/INTERROGATION ENDPOINTS ===

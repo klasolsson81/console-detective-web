@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { caseAPI, chatAPI } from '../services/api';
-import { useGame } from '../contexts/GameContext'; 
+import { useGame } from '../contexts/GameContext';
 import { Case } from '../types';
 import {
-  ArrowLeft, Search, Users, Lightbulb, MessageSquare, CheckCircle, Loader, XCircle
+  ArrowLeft, Search, Users, Lightbulb, MessageSquare, CheckCircle, Loader, XCircle, Volume2, VolumeX
 } from 'lucide-react';
+import { Howl } from 'howler';
+import { Player } from '@lottiefiles/react-lottie-player';
 
 const getImagePath = (folder: 'suspects' | 'locations', name: string) => {
   if (!name) return '/images/suspects/unknown.png';
@@ -33,10 +35,36 @@ const CasePage = () => {
   const [showSolveModal, setShowSolveModal] = useState(false);
   const [solving, setSolving] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [narrationPlaying, setNarrationPlaying] = useState(false);
+
+  const narrationSoundRef = useRef<Howl | null>(null);
+  const ambientSoundRef = useRef<Howl | null>(null);
 
   useEffect(() => {
     if (caseId) loadCase();
   }, [caseId]);
+
+  // Load and play narration + ambient sound when case loads
+  useEffect(() => {
+    if (!caseData) return;
+
+    // Load narration
+    loadNarration();
+
+    // Load ambient sound based on category
+    loadAmbientSound();
+
+    // Cleanup on unmount
+    return () => {
+      if (narrationSoundRef.current) {
+        narrationSoundRef.current.unload();
+      }
+      if (ambientSoundRef.current) {
+        ambientSoundRef.current.stop();
+        ambientSoundRef.current.unload();
+      }
+    };
+  }, [caseData]);
 
   const loadCase = async () => {
     try {
@@ -46,6 +74,62 @@ const CasePage = () => {
       console.error('Failed to load case:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNarration = async () => {
+    if (!caseId) return;
+
+    try {
+      const narrationBase64 = await caseAPI.getCaseNarration(caseId);
+      if (narrationBase64) {
+        const dataUrl = `data:audio/mpeg;base64,${narrationBase64}`;
+        narrationSoundRef.current = new Howl({
+          src: [dataUrl],
+          format: ['mp3'],
+          volume: 0.8,
+          autoplay: true,
+          onplay: () => setNarrationPlaying(true),
+          onend: () => setNarrationPlaying(false),
+          onerror: (id, error) => {
+            console.error('Narration playback error:', error);
+            setNarrationPlaying(false);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load narration:', error);
+    }
+  };
+
+  const loadAmbientSound = () => {
+    if (!caseData) return;
+
+    // Choose ambient sound based on category
+    let soundFile = '/sounds/ambience/city-night.mp3'; // Default
+    if (caseData.category === 'Mord') {
+      soundFile = '/sounds/ambience/rain.mp3';
+    } else if (caseData.category === 'Inbrott') {
+      soundFile = '/sounds/ambience/clock-ticking.mp3';
+    }
+
+    ambientSoundRef.current = new Howl({
+      src: [soundFile],
+      loop: true,
+      volume: 0.15,
+      autoplay: true
+    });
+  };
+
+  const toggleNarration = () => {
+    if (!narrationSoundRef.current) return;
+
+    if (narrationPlaying) {
+      narrationSoundRef.current.pause();
+      setNarrationPlaying(false);
+    } else {
+      narrationSoundRef.current.play();
+      setNarrationPlaying(true);
     }
   };
 
@@ -112,8 +196,35 @@ const CasePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="card-noir p-6">
-              <h2 className="text-2xl font-noir text-gray-100 mb-4">{t('case.details')}</h2>
-              {caseData.location && <div className="mb-4 rounded overflow-hidden border border-gray-700"><img src={getImagePath('locations', caseData.location)} alt={caseData.location} className="w-full h-64 object-cover" /></div>}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-noir text-gray-100">{t('case.details')}</h2>
+                {narrationSoundRef.current && (
+                  <button
+                    onClick={toggleNarration}
+                    className="btn-secondary flex items-center gap-2"
+                    title="Toggle narration"
+                  >
+                    {narrationPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                    <span>{narrationPlaying ? 'Pausera' : 'Spela upp'}</span>
+                  </button>
+                )}
+              </div>
+              {caseData.location && (
+                <div className="mb-4 rounded overflow-hidden border border-gray-700 relative">
+                  <img src={getImagePath('locations', caseData.location)} alt={caseData.location} className="w-full h-64 object-cover" />
+                  {/* Lottie animation overlay for Murder cases */}
+                  {caseData.category === 'Mord' && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <Player
+                        autoplay
+                        loop
+                        src="/animations/rain.json"
+                        style={{ width: '100%', height: '100%', opacity: 0.4 }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
               <p className="text-gray-300 leading-relaxed">{caseData.description}</p>
             </div>
             <div className="card-noir p-6">

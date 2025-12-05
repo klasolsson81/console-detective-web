@@ -12,15 +12,18 @@ namespace ConsoleDetective.API.Controllers
     {
         private readonly CaseService _caseService;
         private readonly AIService _aiService;
+        private readonly TextToSpeechService _ttsService;
         private readonly ILogger<CaseController> _logger;
 
         public CaseController(
             CaseService caseService,
             AIService aiService,
+            TextToSpeechService ttsService,
             ILogger<CaseController> logger)
         {
             _caseService = caseService;
             _aiService = aiService;
+            _ttsService = ttsService;
             _logger = logger;
         }
 
@@ -169,6 +172,37 @@ namespace ConsoleDetective.API.Controllers
             {
                 _logger.LogError(ex, "Fel vid anklagelse");
                 return StatusCode(500, new { message = "Ett fel uppstod" });
+            }
+        }
+
+        /// <summary>
+        /// Generera narration för ett specifikt case
+        /// </summary>
+        [HttpGet("{caseId}/narration")]
+        public async Task<ActionResult> GetCaseNarration(Guid caseId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var caseData = await _caseService.GetCaseByIdAsync(caseId, userId);
+
+                if (caseData == null)
+                    return NotFound(new { message = "Fall hittades inte" });
+
+                // Skapa narration-text
+                var narrationText = $"{caseData.Category}. {caseData.Description}";
+
+                // Generera TTS audio
+                var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
+                var audioBase64 = Convert.ToBase64String(audioBytes);
+
+                return Ok(new { narrationAudio = audioBase64 });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fel vid generering av narration för case {CaseId}", caseId);
+                // Returnera tomt svar istället för att krascha
+                return Ok(new { narrationAudio = (string?)null });
             }
         }
 
