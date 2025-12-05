@@ -39,6 +39,18 @@ namespace ConsoleDetective.API.Controllers
             {
                 var newCase = await _caseService.CreateCaseAsync("guest-user", data);
                 savedCases.Add(newCase);
+
+                // Generera TTS narration för detta specifika case
+                try
+                {
+                    var narrationText = $"{newCase.Category}. {newCase.Description}";
+                    var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
+                    await _caseService.SaveNarrationAudioAsync(newCase.Id, audioBytes);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ TTS-generering för case {newCase.Id} misslyckades: {ex.Message}");
+                }
             }
 
             // Generera narration audio för alla case descriptions
