@@ -32,6 +32,11 @@ namespace ConsoleDetective.API.Services
         /// </summary>
         public async Task<GeneratedCaseData> GenerateCaseAsync(string category)
         {
+            // Säkerhet: Validera category
+            var validCategories = new[] { "Mord", "Bankrån", "Inbrott", "Otrohet" };
+            if (!validCategories.Contains(category))
+                throw new ArgumentException($"Ogiltig kategori: {category}");
+
             var locations = GetLocationsForCategory(category);
             var location = locations[Random.Shared.Next(locations.Length)];
             
@@ -47,6 +52,13 @@ PARAMETRAR:
 - Möjliga misstänkta (ANVÄND ENDAST DESSA): {suspectsString}
 - Välj EN skyldig från listan.
 
+KRITISKA REGLER FÖR NAMN:
+1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
+2. Offret/brottsoffret ska ALLTID kallas ""offret"" eller ""brottsoffret"" - ALDRIG ett specifikt namn
+3. HITTA ALDRIG PÅ nya namn som Elias, Marcus, etc.
+4. Exempel KORREKT: ""Ett brutalt mord har begåtts på offret...""
+5. Exempel FEL: ""Elias hittades död..."" (använd ""offret"" istället)
+
 REGLER FÖR FALLET:
 1. Svårighetsgrad: HÖG. Gör det inte uppenbart.
 2. Den skyldige ska ha ett motiv som inte syns direkt.
@@ -58,7 +70,7 @@ REGLER FÖR FALLET:
 FORMAT:
 Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
 {{
-  ""description"": ""Atmosfärisk berättelse om brottet (max 4 meningar)..."",
+  ""description"": ""Atmosfärisk berättelse om brottet (max 4 meningar). VIKTIGT: Kalla offret för 'offret' INTE ett specifikt namn!"",
   ""guilty"": ""Namn på den skyldige (MÅSTE vara en av: {suspectsString})"",
   ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
 }}";
@@ -131,10 +143,16 @@ SITUATION:
 Brott: {caseData.Title}
 Plats: {caseData.Location}
 Skyldig: {caseData.Guilty}
+Möjliga misstänkta: {string.Join(", ", _validSuspects)}
 
 UPPGIFT:
 Spelaren undersöker rummet noggrant.
 Skriv vad de hittar. Det ska vara av typen: ""{selectedType}"".
+
+NAMNREGLER (KRITISKT):
+- Nämn ENDAST de misstänkta vid namn: {string.Join(", ", _validSuspects)}
+- Kalla offret för ""offret"" eller ""brottsoffret"" - ALDRIG ett specifikt namn
+- Hitta ALDRIG på nya namn
 
 VIKTIGT:
 - Var kortfattad (max 2 meningar).
@@ -169,6 +187,17 @@ Svara ENDAST med texten.";
             List<ChatMessageDto> conversationHistory,
             string currentQuestion)
         {
+            // Säkerhet: Validera user input
+            if (string.IsNullOrWhiteSpace(currentQuestion))
+                throw new ArgumentException("Frågan får inte vara tom");
+
+            if (currentQuestion.Length > 500)
+                throw new ArgumentException("Frågan är för lång (max 500 tecken)");
+
+            // Säkerhet: Validera suspectName
+            if (!_validSuspects.Contains(suspectName))
+                throw new ArgumentException($"Ogiltig misstänkt: {suspectName}");
+
             bool isGuilty = suspectName.Equals(caseData.Guilty, StringComparison.OrdinalIgnoreCase);
             var otherSuspects = _validSuspects.Where(s => s != suspectName).ToList();
             var scapegoat = otherSuspects[Random.Shared.Next(otherSuspects.Count)];
@@ -198,19 +227,24 @@ Strategi:
             string systemPrompt = $@"
 Du spelar rollen av {suspectName} i ett förhör.
 
-VÄRLDSREGLER (VIKTIGT):
-1. De ENDA personerna som existerar är: {string.Join(", ", _validSuspects)}.
-2. Hitta ALDRIG på nya namn.
-3. Offret är den som beskrivs i fallet.
+VÄRLDSREGLER (KRITISKT VIKTIGT):
+1. De ENDA personerna som existerar och får nämnas vid namn är: {string.Join(", ", _validSuspects)}.
+2. Offret/brottsoffret ska ALLTID kallas ""offret"", ""brottsoffret"" eller ""den mördade"" - ALDRIG ett specifikt namn.
+3. Hitta ALDRIG på nya namn som Elias, Marcus, Sofia etc.
+4. Den skyldige i detta fall är: {caseData.Guilty}
+5. Exempel KORREKT: ""Jag såg Carlos vid brottsplatsen när offret attackerades""
+6. Exempel FEL: ""Jag såg Carlos när han dödade Elias"" (använd ""offret"" istället för Elias)
 
 KONTEXT:
 Brott: {caseData.Title} på {caseData.Location}.
+Beskrivning: {caseData.Description}
 {behaviorInstruction}
 
 INSTRUKTIONER FÖR SVARET:
 - Svara kort (1-3 meningar).
 - Använd talspråk och karaktärens röst.
 - Skriv på svenska.
+- NÄMN ENDAST de 4 misstänkta vid namn, ALDRIG offret.
 - Inkludera känslo-tagg först i parentes, ex: (nervös), (arg).";
 
             var chatMessages = new List<OpenAIChatMessage>
@@ -300,7 +334,7 @@ Om NEJ: Svara ""INGEN"".";
         {
             "Bankrån" => new[] { "Centralbank" },
             "Mord" => new[] { "Herrgården", "NBI", "Industrilokal" },
-            "Inbrott" => new[] { "Stadshuset", "Teknikaffären", "Villan" },
+            "Inbrott" => new[] { "Stadshuset", "Teknikaffären", "Villa" },
             "Otrohet" => new[] { "Hotell", "Restaurang", "Lägenheten", "Strandpromenaden" },
             _ => new[] { "Okänd plats" }
         };
