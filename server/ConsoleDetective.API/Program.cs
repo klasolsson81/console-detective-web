@@ -15,13 +15,38 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // === Database Setup ===
-// SQLite för utveckling, PostgreSQL för produktion
-// OBS: På Railway nollställs SQLite vid varje deploy.
-var connectionString = configuration.GetConnectionString("DefaultConnection") 
-    ?? "Data Source=consoledetective.db";
+// Railway: PostgreSQL med DATABASE_URL
+// Lokal utveckling: SQLite
+if (builder.Environment.IsProduction())
+{
+    // Railway sätter DATABASE_URL automatiskt när Postgres är länkad
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        // Konvertera Railway's postgres:// URL till Npgsql connection string
+        var connectionString = ConvertRailwayDatabaseUrl(databaseUrl);
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString));
+
+        Console.WriteLine("✅ Använder PostgreSQL (Railway)");
+    }
+    else
+    {
+        throw new InvalidOperationException("DATABASE_URL saknas i produktion. Länka en PostgreSQL-databas i Railway.");
+    }
+}
+else
+{
+    // Lokal utveckling med SQLite
+    var connectionString = configuration.GetConnectionString("DefaultConnection")
+        ?? "Data Source=consoledetective.db";
+
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(connectionString));
+
+    Console.WriteLine("✅ Använder SQLite (Utveckling)");
+}
 
 // === JWT Authentication ===
 var jwtSecret = configuration["Jwt:Secret"] 
@@ -221,3 +246,30 @@ app.MapGet("/", () => "Console Detective API is running! 🕵️‍♂️");
 
 // === Start Application ===
 app.Run();
+
+// === Helper Functions ===
+static string ConvertRailwayDatabaseUrl(string databaseUrl)
+{
+    // Railway URL format: postgres://user:password@host:port/database
+    // Vi behöver konvertera till Npgsql format
+    try
+    {
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder
+        {
+            Host = uri.Host,
+            Port = uri.Port,
+            Username = userInfo[0],
+            Password = userInfo.Length > 1 ? userInfo[1] : "",
+            Database = uri.LocalPath.TrimStart('/')
+        };
+
+        return builder.ToString();
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException($"Kunde inte parsa DATABASE_URL: {ex.Message}");
+    }
+}
