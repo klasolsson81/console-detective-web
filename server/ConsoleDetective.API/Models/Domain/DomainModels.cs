@@ -28,10 +28,11 @@ namespace ConsoleDetective.API.Models.Domain
         public bool IsCompleted { get; set; }
         public bool IsSolved { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
+        public byte[]? NarrationAudio { get; set; } // TTS audio för case-beskrivning
+
         // Foreign keys
         public Guid UserId { get; set; }
-        
+
         // Navigation properties
         public User User { get; set; } = null!;
         public List<Clue> Clues { get; set; } = new();

@@ -66,16 +66,30 @@ namespace ConsoleDetective.API.Controllers
             try
             {
                 var userId = GetUserId();
-                
+
                 // Validera kategori
                 if (!IsValidCategory(request.Category))
                     return BadRequest(new { message = "Ogiltig kategori" });
 
                 // Generera fall via AI
                 var generatedCase = await _aiService.GenerateCaseAsync(request.Category);
-                
+
                 // Spara i databas
                 var savedCase = await _caseService.CreateCaseAsync(userId, generatedCase);
+
+                // Generera TTS narration direkt (i bakgrunden)
+                try
+                {
+                    var narrationText = $"{savedCase.Category}. {savedCase.Description}";
+                    var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
+                    await _caseService.SaveNarrationAudioAsync(savedCase.Id, audioBytes);
+                    _logger.LogInformation("TTS narration genererad för case {CaseId}", savedCase.Id);
+                }
+                catch (Exception ttsEx)
+                {
+                    // Om TTS misslyckas, fortsätt ändå (icke-kritiskt)
+                    _logger.LogWarning(ttsEx, "Kunde inte generera TTS för case {CaseId}", savedCase.Id);
+                }
 
                 _logger.LogInformation(
                     "Nytt fall genererat: {CaseId} för användare {UserId}",
@@ -176,7 +190,7 @@ namespace ConsoleDetective.API.Controllers
         }
 
         /// <summary>
-        /// Generera narration för ett specifikt case
+        /// Hämta narration för ett specifikt case
         /// </summary>
         [HttpGet("{caseId}/narration")]
         public async Task<ActionResult> GetCaseNarration(Guid caseId)
@@ -189,18 +203,27 @@ namespace ConsoleDetective.API.Controllers
                 if (caseData == null)
                     return NotFound(new { message = "Fall hittades inte" });
 
-                // Skapa narration-text
+                // Om narration redan finns, returnera den
+                if (caseData.NarrationAudio != null && caseData.NarrationAudio.Length > 0)
+                {
+                    var audioBase64 = Convert.ToBase64String(caseData.NarrationAudio);
+                    return Ok(new { narrationAudio = audioBase64 });
+                }
+
+                // Fallback: Om narration saknas, generera den nu
+                _logger.LogWarning("Narration saknas för case {CaseId}, genererar ny", caseId);
                 var narrationText = $"{caseData.Category}. {caseData.Description}";
-
-                // Generera TTS audio
                 var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
-                var audioBase64 = Convert.ToBase64String(audioBytes);
 
-                return Ok(new { narrationAudio = audioBase64 });
+                // Spara för framtiden
+                await _caseService.SaveNarrationAudioAsync(caseId, audioBytes);
+
+                var audioBase64New = Convert.ToBase64String(audioBytes);
+                return Ok(new { narrationAudio = audioBase64New });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Fel vid generering av narration för case {CaseId}", caseId);
+                _logger.LogError(ex, "Fel vid hämtning av narration för case {CaseId}", caseId);
                 // Returnera tomt svar istället för att krascha
                 return Ok(new { narrationAudio = (string?)null });
             }

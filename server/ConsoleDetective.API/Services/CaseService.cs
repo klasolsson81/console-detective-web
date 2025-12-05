@@ -101,6 +101,16 @@ namespace ConsoleDetective.API.Services
             return caseData;
         }
 
+        public async Task SaveNarrationAudioAsync(Guid caseId, byte[] audioBytes)
+        {
+            var caseData = await _context.Cases.FindAsync(caseId);
+            if (caseData != null)
+            {
+                caseData.NarrationAudio = audioBytes;
+                await _context.SaveChangesAsync();
+            }
+        }
+
         public async Task<Clue> AddClueAsync(Guid caseId, string clueText, string type = "Investigation")
         {
             var clue = new Clue { CaseId = caseId, Text = clueText, Type = type };
