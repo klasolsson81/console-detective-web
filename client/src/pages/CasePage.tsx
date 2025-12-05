@@ -80,25 +80,39 @@ const CasePage = () => {
   const loadNarration = async () => {
     if (!caseId) return;
 
+    console.log('🎙️ Loading narration for case:', caseId);
     try {
       const narrationBase64 = await caseAPI.getCaseNarration(caseId);
+      console.log('🎙️ Narration response:', narrationBase64 ? 'Audio received' : 'No audio');
+
       if (narrationBase64) {
         const dataUrl = `data:audio/mpeg;base64,${narrationBase64}`;
+        console.log('🎙️ Creating Howl with audio length:', narrationBase64.length);
+
         narrationSoundRef.current = new Howl({
           src: [dataUrl],
           format: ['mp3'],
           volume: 0.8,
           autoplay: true,
-          onplay: () => setNarrationPlaying(true),
-          onend: () => setNarrationPlaying(false),
+          onload: () => console.log('✅ Narration loaded successfully'),
+          onplay: () => {
+            console.log('▶️ Narration started playing');
+            setNarrationPlaying(true);
+          },
+          onend: () => {
+            console.log('⏹️ Narration finished');
+            setNarrationPlaying(false);
+          },
           onerror: (id, error) => {
-            console.error('Narration playback error:', error);
+            console.error('❌ Narration playback error:', id, error);
             setNarrationPlaying(false);
           }
         });
+      } else {
+        console.warn('⚠️ No narration audio returned from API');
       }
     } catch (error) {
-      console.error('Failed to load narration:', error);
+      console.error('❌ Failed to load narration:', error);
     }
   };
 
@@ -212,7 +226,7 @@ const CasePage = () => {
               {caseData.location && (
                 <div className="mb-4 rounded overflow-hidden border border-gray-700 relative">
                   <img src={getImagePath('locations', caseData.location)} alt={caseData.location} className="w-full h-64 object-cover" />
-                  {/* Lottie animation overlay for Murder cases */}
+                  {/* Lottie animation overlays based on case category */}
                   {caseData.category === 'Mord' && (
                     <div className="absolute inset-0 pointer-events-none">
                       <Player
@@ -220,6 +234,36 @@ const CasePage = () => {
                         loop
                         src="/animations/rain.json"
                         style={{ width: '100%', height: '100%', opacity: 0.4 }}
+                      />
+                    </div>
+                  )}
+                  {caseData.category === 'Bankrån' && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <Player
+                        autoplay
+                        loop
+                        src="/animations/police-lights.json"
+                        style={{ width: '100%', height: '100%', opacity: 0.3 }}
+                      />
+                    </div>
+                  )}
+                  {caseData.category === 'Inbrott' && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <Player
+                        autoplay
+                        loop
+                        src="/animations/smoke.json"
+                        style={{ width: '100%', height: '100%', opacity: 0.25 }}
+                      />
+                    </div>
+                  )}
+                  {caseData.category === 'Otrohet' && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <Player
+                        autoplay
+                        loop
+                        src="/animations/neon-flicker.json"
+                        style={{ width: '100%', height: '100%', opacity: 0.2 }}
                       />
                     </div>
                   )}
