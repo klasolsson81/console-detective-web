@@ -108,6 +108,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CaseService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<TextToSpeechService>();
 
 // === Controllers ===
 builder.Services.AddControllers()
