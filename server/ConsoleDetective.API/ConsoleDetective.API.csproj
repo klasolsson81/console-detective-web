@@ -26,6 +26,7 @@
 
     <!-- OpenAI SDK -->
     <PackageReference Include="OpenAI" Version="2.5.0" />
+    <PackageReference Include="RestSharp" Version="113.0.0" />
 
     <!-- Swagger/OpenAPI (redan inkluderad i webapi template, men här för tydlighet) -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
