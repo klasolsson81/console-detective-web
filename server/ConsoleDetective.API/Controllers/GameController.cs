@@ -13,12 +13,14 @@ namespace ConsoleDetective.API.Controllers
         private readonly CaseService _caseService;
         private readonly AIService _aiService;
         private readonly AppDbContext _context;
+        private readonly TextToSpeechService _ttsService;
 
-        public GameController(CaseService caseService, AIService aiService, AppDbContext context)
+        public GameController(CaseService caseService, AIService aiService, AppDbContext context, TextToSpeechService ttsService)
         {
             _caseService = caseService;
             _aiService = aiService;
             _context = context;
+            _ttsService = ttsService;
         }
 
         [HttpPost("start-session")]
@@ -39,19 +41,39 @@ namespace ConsoleDetective.API.Controllers
                 savedCases.Add(newCase);
             }
 
-            return Ok(new 
-            { 
-                sessionId, 
-                cases = savedCases.Select(c => new { 
-                    c.Id, 
-                    c.Title, 
-                    c.Category, 
-                    c.Description, 
+            // Generera narration audio för alla case descriptions
+            string? narrationAudioBase64 = null;
+            try
+            {
+                // Kombinera alla beskrivningar till en narration
+                var introText = "Fyra nya fall har rapporterats. ";
+                var descriptionsText = string.Join(" ... ", savedCases.Select(c => $"{c.Category}: {c.Description}"));
+                var fullNarration = introText + descriptionsText;
+
+                // Generera TTS audio
+                var audioBytes = await _ttsService.GenerateSpeechAsync(fullNarration);
+                narrationAudioBase64 = Convert.ToBase64String(audioBytes);
+            }
+            catch (Exception ex)
+            {
+                // Om TTS misslyckas, logga men fortsätt ändå (narration är optional)
+                Console.WriteLine($"⚠️ TTS-generering misslyckades: {ex.Message}");
+            }
+
+            return Ok(new
+            {
+                sessionId,
+                narrationAudio = narrationAudioBase64,
+                cases = savedCases.Select(c => new {
+                    c.Id,
+                    c.Title,
+                    c.Category,
+                    c.Description,
                     c.Location,
                     c.PossibleSuspects,
                     c.IsCompleted,
-                    c.IsSolved 
-                }) 
+                    c.IsSolved
+                })
             });
         }
 
