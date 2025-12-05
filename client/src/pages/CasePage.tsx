@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 
 const getImagePath = (folder: 'suspects' | 'locations', name: string) => {
-  if (!name) return '/images/suspects/unknown.png'; 
+  if (!name) return '/images/suspects/unknown.png';
   const normalizedName = name.toLowerCase()
     .replace(/\s+/g, '_')
     .replace(/[åä]/g, 'a')
     .replace(/ö/g, 'o');
-  return `/images/${folder}/${normalizedName}.png`;
+  // Locations use .jpg, suspects use .png
+  const extension = folder === 'locations' ? 'jpg' : 'png';
+  return `/images/${folder}/${normalizedName}.${extension}`;
 };
 
 const CasePage = () => {

@@ -79,7 +79,7 @@ export default function TVNewsIntro({ caseData, audioBase64, onComplete }: TVNew
     };
   }, [audioBase64, onComplete]);
 
-  // Normalize location name for image path
+  // Normalize location name for image path (using .jpg for locations)
   const getLocationImage = (location: string) => {
     const normalized = location
       .toLowerCase()
