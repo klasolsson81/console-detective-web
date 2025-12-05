@@ -5,6 +5,7 @@ import App from './App.tsx';
 import { GameProvider } from './contexts/GameContext'; // <-- Ändrad import
 import './i18n.ts';
 import './index.css';
+import './styles/global-noir.css'; // Global noir theme
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
