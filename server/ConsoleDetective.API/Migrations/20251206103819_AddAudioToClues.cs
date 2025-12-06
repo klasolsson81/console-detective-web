@@ -13,7 +13,7 @@ namespace ConsoleDetective.API.Migrations
             migrationBuilder.AddColumn<byte[]>(
                 name: "Audio",
                 table: "Clues",
-                type: "BLOB",
+                type: "bytea",
                 nullable: true);
         }
 
