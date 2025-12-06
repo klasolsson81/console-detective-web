@@ -1,92 +1,77 @@
-import { useEffect, useState } from 'react';
-
-interface Bill {
-  id: number;
-  left: number;
-  delay: number;
-  duration: number;
-  size: number;
-  rotation: number;
-}
-
 const FlyingMoney = () => {
-  const [bills, setBills] = useState<Bill[]>([]);
-
-  useEffect(() => {
-    // Skapa 8 slumpmässiga sedlar
-    const newBills: Bill[] = Array.from({ length: 8 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100, // 0-100%
-      delay: Math.random() * 5, // 0-5s delay
-      duration: 8 + Math.random() * 4, // 8-12s duration
-      size: 40 + Math.random() * 30, // 40-70px
-      rotation: Math.random() * 360, // 0-360deg
-    }));
-    setBills(newBills);
-  }, []);
-
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {bills.map((bill) => (
+      {/* Blinkande polisljus - röd och blå i hörnen */}
+      <div className="absolute top-0 left-0 w-32 h-32 animate-police-red opacity-20 blur-3xl"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 animate-police-blue opacity-20 blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-32 h-32 animate-police-blue opacity-15 blur-3xl" style={{ animationDelay: '0.5s' }}></div>
+      <div className="absolute bottom-0 right-0 w-32 h-32 animate-police-red opacity-15 blur-3xl" style={{ animationDelay: '0.5s' }}></div>
+
+      {/* Spotlight som svetar fram och tillbaka */}
+      <div className="absolute inset-0 animate-spotlight-sweep">
         <div
-          key={bill.id}
-          className="absolute animate-fall-money"
+          className="absolute top-0 w-64 h-full opacity-20"
           style={{
-            left: `${bill.left}%`,
-            animationDelay: `${bill.delay}s`,
-            animationDuration: `${bill.duration}s`,
-            width: `${bill.size}px`,
-            height: `${bill.size * 0.45}px`,
+            background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%)',
+            filter: 'blur(30px)',
           }}
-        >
-          <div
-            className="w-full h-full rounded-sm shadow-lg animate-spin-slow"
-            style={{
-              background: 'linear-gradient(135deg, #2d5016 0%, #4a7c1f 50%, #2d5016 100%)',
-              border: '1px solid #5a9c2f',
-              animationDuration: '3s',
-              transform: `rotate(${bill.rotation}deg)`,
-            }}
-          >
-            <div className="w-full h-full flex items-center justify-center text-white/30 font-bold text-xs">
-              $$$
-            </div>
-          </div>
-        </div>
-      ))}
+        ></div>
+      </div>
+
+      {/* Subtil vit pulsande overlay för "alarm"-effekt */}
+      <div className="absolute inset-0 bg-white animate-alarm-pulse opacity-0"></div>
+
       <style>{`
-        @keyframes fall-money {
+        @keyframes police-red {
+          0%, 100% {
+            background-color: transparent;
+          }
+          50% {
+            background-color: rgba(220, 38, 38, 0.6);
+          }
+        }
+
+        @keyframes police-blue {
+          0%, 100% {
+            background-color: transparent;
+          }
+          50% {
+            background-color: rgba(37, 99, 235, 0.6);
+          }
+        }
+
+        @keyframes spotlight-sweep {
           0% {
-            transform: translateY(-100px) translateX(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
+            transform: translateX(-100%);
           }
           100% {
-            transform: translateY(calc(100vh + 100px)) translateX(50px);
+            transform: translateX(calc(100% + 300px));
+          }
+        }
+
+        @keyframes alarm-pulse {
+          0%, 90%, 100% {
             opacity: 0;
           }
-        }
-
-        @keyframes spin-slow {
-          0% {
-            transform: rotateY(0deg);
-          }
-          100% {
-            transform: rotateY(360deg);
+          95% {
+            opacity: 0.08;
           }
         }
 
-        .animate-fall-money {
-          animation: fall-money linear infinite;
+        .animate-police-red {
+          animation: police-red 1.2s ease-in-out infinite;
         }
 
-        .animate-spin-slow {
-          animation: spin-slow linear infinite;
+        .animate-police-blue {
+          animation: police-blue 1.2s ease-in-out infinite;
+        }
+
+        .animate-spotlight-sweep {
+          animation: spotlight-sweep 8s ease-in-out infinite;
+        }
+
+        .animate-alarm-pulse {
+          animation: alarm-pulse 2s ease-in-out infinite;
         }
       `}</style>
     </div>
