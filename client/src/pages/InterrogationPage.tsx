@@ -111,27 +111,30 @@ const InterrogationPage = () => {
   return (
     <div className="min-h-screen bg-noir-darkest flex flex-col">
       {/* Header */}
-      <div className="bg-noir-darker border-b border-gray-800 py-4 px-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="btn-ghost flex items-center gap-2">
-            <ArrowLeft size={20} /> {t('common.back')}
-          </button>
-          <div className="flex items-center gap-3">
-             {/* Liten avatar i headern */}
-             <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600">
-                <img 
-                  src={getImagePath(suspectName)} 
-                  alt={suspectName}
-                  className="w-full h-full object-cover"
-                />
-             </div>
-             <h1 className="text-2xl font-noir text-noir-accent">
-               Förhör: <span className="text-gray-100">{suspectName}</span>
-             </h1>
+      <div className="bg-noir-darker border-b border-gray-800 py-3 sm:py-4 px-4 sm:px-6">
+        <div className="container mx-auto">
+          {/* Mobile: Stack vertically */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <button onClick={() => navigate(-1)} className="btn-ghost flex items-center gap-2 self-start text-sm sm:text-base">
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" /> {t('common.back')}
+            </button>
+            <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+               {/* Liten avatar i headern */}
+               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-gray-600 flex-shrink-0">
+                  <img
+                    src={getImagePath(suspectName)}
+                    alt={suspectName}
+                    className="w-full h-full object-cover"
+                  />
+               </div>
+               <h1 className="text-lg sm:text-xl md:text-2xl font-noir text-noir-accent">
+                 Förhör: <span className="text-gray-100">{suspectName}</span>
+               </h1>
+            </div>
+            <button onClick={() => navigate(-1)} className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 py-2 self-end sm:self-auto">
+              {t('interrogation.endInterrogation')}
+            </button>
           </div>
-          <button onClick={() => navigate(-1)} className="btn-secondary text-sm px-4 py-2">
-            {t('interrogation.endInterrogation')}
-          </button>
         </div>
       </div>
 
@@ -201,24 +204,25 @@ const InterrogationPage = () => {
       </div>
 
       {/* Input Area */}
-      <div className="bg-noir-darker border-t border-gray-800 py-4 px-4">
+      <div className="bg-noir-darker border-t border-gray-800 py-3 sm:py-4 px-4 sm:px-6">
         <div className="container mx-auto max-w-4xl">
-          <form onSubmit={handleSendMessage} className="flex gap-4">
+          <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-4">
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder={`Fråga ${suspectName} något...`}
-              className="input-noir flex-1 text-lg"
+              className="input-noir flex-1 text-sm sm:text-base md:text-lg"
               disabled={sending}
               autoFocus
             />
             <button
               type="submit"
               disabled={sending || !inputMessage.trim()}
-              className="btn-primary flex items-center gap-2 px-8 disabled:opacity-50"
+              className="btn-primary flex items-center gap-2 px-4 sm:px-6 md:px-8 disabled:opacity-50"
             >
-              <Send size={20} />
+              <Send size={18} className="sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline text-sm md:text-base">Skicka</span>
             </button>
           </form>
         </div>

@@ -411,14 +411,33 @@ const CasePage = () => {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="card-noir p-6">
-              <h2 className="text-2xl font-noir text-gray-100 mb-4 flex items-center gap-2"><Users className="text-noir-accent" size={28} />{t('case.suspects')}</h2>
-              <div className="space-y-3">{caseData.possibleSuspects.map((suspect) => (<button key={suspect} onClick={() => handleInterrogate(suspect)} className="w-full bg-noir-dark hover:bg-noir-medium border border-gray-700 hover:border-noir-accent p-3 rounded transition-all group"><div className="flex items-center gap-3"><div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-noir-accent flex-shrink-0"><img src={getImagePath('suspects', suspect)} alt={suspect} className="w-full h-full object-cover" /></div><span className="text-gray-100 font-detective flex-1 text-left">{suspect}</span><MessageSquare className="text-gray-500 group-hover:text-noir-accent" size={20} /></div></button>))}</div>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="card-noir p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-noir text-gray-100 mb-4 flex items-center gap-2">
+                <Users className="text-noir-accent" size={24} />
+                {t('case.suspects')}
+              </h2>
+              <div className="space-y-2 sm:space-y-3">
+                {caseData.possibleSuspects.map((suspect) => (
+                  <button
+                    key={suspect}
+                    onClick={() => handleInterrogate(suspect)}
+                    className="w-full bg-noir-dark hover:bg-noir-medium border border-gray-700 hover:border-noir-accent p-3 sm:p-4 rounded transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-noir-accent flex-shrink-0">
+                        <img src={getImagePath('suspects', suspect)} alt={suspect} className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-sm sm:text-base text-gray-100 font-detective flex-1 text-left">{suspect}</span>
+                      <MessageSquare className="text-gray-500 group-hover:text-noir-accent flex-shrink-0" size={18} />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="card-noir p-6 border-2 border-noir-accent/50">
-              <h2 className="text-2xl font-noir text-noir-accent mb-4">{t('case.solve')}</h2>
-              <button onClick={() => setShowSolveModal(true)} className="btn-primary w-full">{t('case.solve')} →</button>
+            <div className="card-noir p-4 sm:p-6 border-2 border-noir-accent/50">
+              <h2 className="text-xl sm:text-2xl font-noir text-noir-accent mb-4">{t('case.solve')}</h2>
+              <button onClick={() => setShowSolveModal(true)} className="btn-primary w-full py-3 sm:py-4 text-sm sm:text-base">{t('case.solve')} →</button>
             </div>
           </div>
         </div>
@@ -427,9 +446,9 @@ const CasePage = () => {
       {/* INPUT MODAL */}
       {showSolveModal && !result && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="card-noir p-8 max-w-xl w-full">
-            <h2 className="text-3xl font-noir text-noir-accent mb-4">{t('solution.title')}</h2>
-            <div className="space-y-3 mb-8">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="card-noir p-6 sm:p-8 max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl sm:text-3xl font-noir text-noir-accent mb-4">{t('solution.title')}</h2>
+            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
               {caseData.possibleSuspects.map((suspect) => (
                 <button key={suspect} onClick={() => setSelectedSuspect(suspect)} className={`w-full p-4 border-2 rounded transition-all ${selectedSuspect === suspect ? 'border-noir-accent bg-noir-accent/10' : 'border-gray-700 hover:border-gray-600'}`}>
                   <div className="flex items-center gap-3">
