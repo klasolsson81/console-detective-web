@@ -142,6 +142,17 @@ export const caseAPI = {
       return null;
     }
   },
+
+  getClueAudio: async (clueId: string) => {
+    // Hämta audio för en specifik ledtråd
+    try {
+      const response = await api.get(`/case/clues/${clueId}/audio`);
+      return response.data.audio; // Base64 audio string
+    } catch (error) {
+      console.error('Failed to load clue audio:', error);
+      return null;
+    }
+  },
 };
 
 // === CHAT/INTERROGATION ENDPOINTS ===

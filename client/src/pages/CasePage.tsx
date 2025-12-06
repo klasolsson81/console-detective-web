@@ -36,9 +36,11 @@ const CasePage = () => {
   const [solving, setSolving] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [narrationPlaying, setNarrationPlaying] = useState(false);
+  const [playingClueId, setPlayingClueId] = useState<string | null>(null);
 
   const narrationSoundRef = useRef<Howl | null>(null);
   const ambientSoundRef = useRef<Howl | null>(null);
+  const clueSoundRef = useRef<Howl | null>(null);
 
   useEffect(() => {
     if (caseId) loadCase();
@@ -63,6 +65,9 @@ const CasePage = () => {
         ambientSoundRef.current.stop();
         ambientSoundRef.current.unload();
       }
+      if (clueSoundRef.current) {
+        clueSoundRef.current.unload();
+      }
     };
   }, [caseData]);
 
@@ -86,6 +91,13 @@ const CasePage = () => {
         ambientSoundRef.current.pause();
       } else {
         ambientSoundRef.current.play();
+      }
+    }
+
+    if (clueSoundRef.current) {
+      if (isMuted) {
+        clueSoundRef.current.pause();
+        setPlayingClueId(null);
       }
     }
   }, [isMuted]);
@@ -168,6 +180,56 @@ const CasePage = () => {
     } else {
       narrationSoundRef.current.play();
       setNarrationPlaying(true);
+    }
+  };
+
+  const playClueAudio = async (clueId: string) => {
+    if (isMuted) return; // Don't play if muted
+
+    console.log('🎙️ Loading audio for clue:', clueId);
+
+    // Stop currently playing clue
+    if (clueSoundRef.current) {
+      clueSoundRef.current.unload();
+    }
+
+    // Pause narration when playing a clue
+    if (narrationSoundRef.current && narrationPlaying) {
+      narrationSoundRef.current.pause();
+      setNarrationPlaying(false);
+    }
+
+    try {
+      const clueAudioBase64 = await caseAPI.getClueAudio(clueId);
+      console.log('🎙️ Clue audio response:', clueAudioBase64 ? 'Audio received' : 'No audio');
+
+      if (clueAudioBase64) {
+        const dataUrl = `data:audio/mpeg;base64,${clueAudioBase64}`;
+
+        clueSoundRef.current = new Howl({
+          src: [dataUrl],
+          format: ['mp3'],
+          volume: 0.9,
+          autoplay: true,
+          onload: () => console.log('✅ Clue audio loaded successfully'),
+          onplay: () => {
+            console.log('▶️ Clue audio started playing');
+            setPlayingClueId(clueId);
+          },
+          onend: () => {
+            console.log('⏹️ Clue audio finished');
+            setPlayingClueId(null);
+          },
+          onerror: (id, error) => {
+            console.error('❌ Clue audio playback error:', id, error);
+            setPlayingClueId(null);
+          }
+        });
+      } else {
+        console.warn('⚠️ No clue audio returned from API');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load clue audio:', error);
     }
   };
 
@@ -301,8 +363,37 @@ const CasePage = () => {
                 <button onClick={handleInvestigate} disabled={investigating} className="btn-primary flex items-center gap-2"><Search size={20} />{investigating ? t('case.investigating') : t('case.investigate')}</button>
               </div>
               {caseData.clues && caseData.clues.length > 0 ? (
-                <div className="space-y-3">{caseData.clues.map((clue) => (<div key={clue.id} className="bg-noir-dark border border-gray-700 p-4 rounded"><p className="text-gray-300">{clue.text}</p><p className="text-sm text-gray-500 mt-2">{clue.type}</p></div>))}</div>
-              ) : (<p className="text-gray-500 italic">{t('case.noCluesYet')}</p>)}
+                <div className="space-y-3">
+                  {caseData.clues.map((clue) => (
+                    <button
+                      key={clue.id}
+                      onClick={() => playClueAudio(clue.id)}
+                      className={`w-full bg-noir-dark border p-4 rounded transition-all text-left group hover:bg-noir-medium ${
+                        playingClueId === clue.id
+                          ? 'border-noir-accent shadow-lg shadow-noir-accent/20'
+                          : 'border-gray-700 hover:border-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Volume2
+                          className={`flex-shrink-0 mt-1 ${
+                            playingClueId === clue.id
+                              ? 'text-noir-accent animate-pulse'
+                              : 'text-gray-500 group-hover:text-gray-400'
+                          }`}
+                          size={20}
+                        />
+                        <div className="flex-1">
+                          <p className="text-gray-300">{clue.text}</p>
+                          <p className="text-sm text-gray-500 mt-2">{clue.type}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">{t('case.noCluesYet')}</p>
+              )}
             </div>
           </div>
 
