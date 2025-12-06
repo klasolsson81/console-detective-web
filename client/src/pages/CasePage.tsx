@@ -26,7 +26,7 @@ const CasePage = () => {
   const { t } = useTranslation();
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
-  const { markCaseCompleted } = useGame(); 
+  const { markCaseCompleted, isMuted } = useGame(); 
 
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,6 +66,30 @@ const CasePage = () => {
     };
   }, [caseData]);
 
+  // Control all audio based on mute state
+  useEffect(() => {
+    if (narrationSoundRef.current) {
+      if (isMuted) {
+        narrationSoundRef.current.pause();
+        setNarrationPlaying(false);
+      } else {
+        // Only resume if it was playing
+        if (narrationSoundRef.current.playing()) {
+          narrationSoundRef.current.play();
+          setNarrationPlaying(true);
+        }
+      }
+    }
+
+    if (ambientSoundRef.current) {
+      if (isMuted) {
+        ambientSoundRef.current.pause();
+      } else {
+        ambientSoundRef.current.play();
+      }
+    }
+  }, [isMuted]);
+
   const loadCase = async () => {
     try {
       const data = await caseAPI.getCaseById(caseId!);
@@ -93,7 +117,7 @@ const CasePage = () => {
           src: [dataUrl],
           format: ['mp3'],
           volume: 0.8,
-          autoplay: true,
+          autoplay: !isMuted, // Don't autoplay if muted
           onload: () => console.log('✅ Narration loaded successfully'),
           onplay: () => {
             console.log('▶️ Narration started playing');
@@ -131,7 +155,7 @@ const CasePage = () => {
       src: [soundFile],
       loop: true,
       volume: 0.15,
-      autoplay: true
+      autoplay: !isMuted // Don't autoplay if muted
     });
   };
 

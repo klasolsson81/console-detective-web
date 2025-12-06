@@ -47,10 +47,11 @@ namespace ConsoleDetective.API.Models.Domain
         public string Type { get; set; } = string.Empty; // "Investigation" eller "Interrogation"
         public DateTime DiscoveredAt { get; set; } = DateTime.UtcNow;
         public string? AssignedToSuspect { get; set; } // För Evidence Board
-        
+        public byte[]? Audio { get; set; } // TTS audio för ledtråden
+
         // Foreign keys
         public Guid CaseId { get; set; }
-        
+
         // Navigation properties
         public Case Case { get; set; } = null!;
     }

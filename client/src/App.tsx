@@ -6,6 +6,7 @@ import SetupPage from './pages/SetupPage';
 import Dashboard from './pages/Dashboard';
 import CasePage from './pages/CasePage';
 import InterrogationPage from './pages/InterrogationPage';
+import MuteButton from './components/MuteButton';
 
 // === FIX: Flytta ut RequireSession hit ===
 // Nu är det en stabil komponent som inte återskapas varje gång App renderas om.
@@ -22,6 +23,9 @@ function App() {
   // Vi behöver inte hämta session här inne längre för skyddet
   return (
     <div className="min-h-screen bg-noir-darkest text-gray-100 font-detective">
+      {/* Global mute button - visible on all pages */}
+      <MuteButton />
+
       <Routes>
         {/* Startsida */}
         <Route path="/" element={<LandingPage />} />

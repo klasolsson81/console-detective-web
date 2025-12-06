@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Howl } from 'howler';
 import { Player } from '@lottiefiles/react-lottie-player';
+import { useGame } from '../contexts/GameContext';
 
 interface Case {
   id: string;
@@ -18,6 +19,7 @@ interface TVNewsIntroProps {
 }
 
 export default function TVNewsIntro({ caseData, audioBase64, onComplete }: TVNewsIntroProps) {
+  const { isMuted } = useGame();
   const [displayedText, setDisplayedText] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const soundRef = useRef<Howl | null>(null);
@@ -48,7 +50,7 @@ export default function TVNewsIntro({ caseData, audioBase64, onComplete }: TVNew
         soundRef.current = new Howl({
           src: [dataUrl],
           format: ['mp3'],
-          autoplay: true,
+          autoplay: !isMuted, // Don't autoplay if muted
           volume: 0.8,
           onplay: () => setIsPlaying(true),
           onend: () => {
@@ -78,6 +80,19 @@ export default function TVNewsIntro({ caseData, audioBase64, onComplete }: TVNew
       }
     };
   }, [audioBase64, onComplete]);
+
+  // Control audio based on mute state
+  useEffect(() => {
+    if (soundRef.current) {
+      if (isMuted) {
+        soundRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        soundRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  }, [isMuted]);
 
   // Normalize location name for image path (using .jpg for locations)
   const getLocationImage = (location: string) => {

@@ -9,7 +9,7 @@ import { Howl } from 'howler';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { session, endGame } = useGame();
+  const { session, endGame, isMuted } = useGame();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [submittingScore, setSubmittingScore] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
@@ -27,7 +27,7 @@ const Dashboard = () => {
         src: ['/sounds/Covert_Affair_Film_Noire_Kevin_MacLeod.mp3'],
         loop: true,
         volume: 0.3,
-        autoplay: true
+        autoplay: !isMuted // Don't autoplay if muted
       });
     }
 
@@ -37,7 +37,18 @@ const Dashboard = () => {
         ambientSoundRef.current.unload();
       }
     };
-  }, []);
+  }, [isMuted]);
+
+  // Control ambient sound based on mute state
+  useEffect(() => {
+    if (ambientSoundRef.current) {
+      if (isMuted) {
+        ambientSoundRef.current.pause();
+      } else {
+        ambientSoundRef.current.play();
+      }
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     if (!session) {

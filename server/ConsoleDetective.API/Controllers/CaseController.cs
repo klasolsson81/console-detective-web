@@ -82,8 +82,16 @@ namespace ConsoleDetective.API.Controllers
                 {
                     var narrationText = $"{savedCase.Category}. {savedCase.Description}";
                     var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
-                    await _caseService.SaveNarrationAudioAsync(savedCase.Id, audioBytes);
-                    _logger.LogInformation("TTS narration genererad för case {CaseId}", savedCase.Id);
+
+                    if (audioBytes != null && audioBytes.Length > 0)
+                    {
+                        await _caseService.SaveNarrationAudioAsync(savedCase.Id, audioBytes);
+                        _logger.LogInformation("TTS narration genererad för case {CaseId}", savedCase.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("TTS returnerade null för case {CaseId}, fortsätter utan ljud", savedCase.Id);
+                    }
                 }
                 catch (Exception ttsEx)
                 {
@@ -215,17 +223,65 @@ namespace ConsoleDetective.API.Controllers
                 var narrationText = $"{caseData.Category}. {caseData.Description}";
                 var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
 
-                // Spara för framtiden
-                await _caseService.SaveNarrationAudioAsync(caseId, audioBytes);
+                // Om TTS lyckades, spara och returnera
+                if (audioBytes != null && audioBytes.Length > 0)
+                {
+                    await _caseService.SaveNarrationAudioAsync(caseId, audioBytes);
+                    var audioBase64New = Convert.ToBase64String(audioBytes);
+                    return Ok(new { narrationAudio = audioBase64New });
+                }
 
-                var audioBase64New = Convert.ToBase64String(audioBytes);
-                return Ok(new { narrationAudio = audioBase64New });
+                // Om TTS misslyckades helt, returnera null (spelet fortsätter utan ljud)
+                _logger.LogWarning("TTS misslyckades för case {CaseId}, returnerar null", caseId);
+                return Ok(new { narrationAudio = (string?)null });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Fel vid hämtning av narration för case {CaseId}", caseId);
                 // Returnera tomt svar istället för att krascha
                 return Ok(new { narrationAudio = (string?)null });
+            }
+        }
+
+        /// <summary>
+        /// Hämtar audio för en specifik ledtråd
+        /// </summary>
+        [HttpGet("clues/{clueId}/audio")]
+        public async Task<ActionResult> GetClueAudio(Guid clueId)
+        {
+            try
+            {
+                var clue = await _caseService.GetClueByIdAsync(clueId);
+
+                if (clue == null)
+                    return NotFound(new { message = "Ledtråd hittades inte" });
+
+                // Om audio redan finns, returnera den
+                if (clue.Audio != null && clue.Audio.Length > 0)
+                {
+                    var audioBase64 = Convert.ToBase64String(clue.Audio);
+                    return Ok(new { audio = audioBase64 });
+                }
+
+                // Fallback: Generera audio nu om den saknas
+                _logger.LogWarning("Audio saknas för clue {ClueId}, genererar ny", clueId);
+                var audioBytes = await _ttsService.GenerateSpeechAsync(clue.Text);
+
+                if (audioBytes != null && audioBytes.Length > 0)
+                {
+                    await _caseService.SaveClueAudioAsync(clueId, audioBytes);
+                    var audioBase64 = Convert.ToBase64String(audioBytes);
+                    return Ok(new { audio = audioBase64 });
+                }
+
+                // Om TTS misslyckades helt
+                _logger.LogWarning("TTS misslyckades för clue {ClueId}", clueId);
+                return Ok(new { audio = (string?)null });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fel vid hämtning av audio för clue {ClueId}", clueId);
+                return Ok(new { audio = (string?)null });
             }
         }
 

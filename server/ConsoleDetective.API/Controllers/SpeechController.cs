@@ -38,6 +38,13 @@ namespace ConsoleDetective.API.Controllers
 
                 var audioData = await _ttsService.GenerateSpeechAsync(request.Text, voiceId);
 
+                // Om TTS misslyckades, returnera 503 Service Unavailable
+                if (audioData == null || audioData.Length == 0)
+                {
+                    _logger.LogWarning("TTS-tjänsten returnerade null för text: {Text}", request.Text);
+                    return StatusCode(503, new { error = "TTS-tjänsten är för tillfället inte tillgänglig. Spelet fortsätter utan ljud." });
+                }
+
                 // Returnera som MP3-fil
                 return File(audioData, "audio/mpeg", "speech.mp3");
             }

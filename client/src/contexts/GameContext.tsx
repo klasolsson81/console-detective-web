@@ -3,10 +3,12 @@ import { GameSession } from '../types';
 
 interface GameContextType {
   session: GameSession | null;
+  isMuted: boolean;
   // Notera: Här tillåter vi string i input, men konverterar internt
   startGame: (playerName: string, avatar: string, sessionData: any) => void;
   endGame: () => void;
   markCaseCompleted: (caseId: string, isSolved: boolean, pointsEarned: number) => void;
+  toggleMute: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -19,6 +21,12 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return saved ? (JSON.parse(saved) as GameSession) : null;
   });
 
+  // Audio mute state (persistent)
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    const saved = localStorage.getItem('audioMuted');
+    return saved === 'true';
+  });
+
   useEffect(() => {
     if (session) {
       sessionStorage.setItem('gameSession', JSON.stringify(session));
@@ -26,6 +34,15 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       sessionStorage.removeItem('gameSession');
     }
   }, [session]);
+
+  // Persist mute state
+  useEffect(() => {
+    localStorage.setItem('audioMuted', isMuted.toString());
+  }, [isMuted]);
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
 
   const startGame = (playerName: string, avatarInput: string, sessionData: any) => {
     // FIX: Konvertera sträng till exakt typ 'man' | 'woman'
@@ -71,7 +88,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <GameContext.Provider value={{ session, startGame, endGame, markCaseCompleted }}>
+    <GameContext.Provider value={{ session, isMuted, startGame, endGame, markCaseCompleted, toggleMute }}>
       {children}
     </GameContext.Provider>
   );

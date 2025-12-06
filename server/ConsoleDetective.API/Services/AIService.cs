@@ -453,29 +453,35 @@ Din uppgift: Skapa en misstänkt kärleksaffär/otrohetssituation.
 PARAMETRAR:
 - Kategori: Misstänkt otrohet
 - Plats: {location}
-- Möjliga personer (ANVÄND ENDAST DESSA): {suspectsString}
+- De 4 misstänkta älskarna (ANVÄND ENDAST DESSA NAMN): {suspectsString}
 
 KRITISKA REGLER FÖR OTROHET:
-1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
-2. HITTA ALDRIG PÅ nya namn.
-3. En person misstänker att sin partner är otrogen.
-4. ""Guilty"" = Den som faktiskt ÄR otrogen (den som har affären).
-5. Exempel: Om Nemo misstänker att Anna är otrogen med Carlos, då är Anna ""guilty"" (eller Carlos om han är den otrogna parten).
-6. VIKTIGT: Den som misstänker kan INTE vara ""guilty"" - det är partnern som är otrogen som är skyldig!
+1. Använd en UTOMSTÅENDE person som misstänker otrohet (INTE en av de 4).
+   - Exempel på utomstående: Josef, Greta, Erik, Lisa, Magnus, Sofia
+2. Den utomstående personen misstänker att deras partner har varit otrogen med EN av de 4: {suspectsString}
+3. ""Guilty"" = EN av de 4 misstänkta som faktiskt HAR haft en affär.
+4. Exempel KORREKT: ""Josef misstänker att hans fru Greta har träffat Nemo i hemlighet. Guilty: Nemo""
+5. Exempel KORREKT: ""Erik har sett sin partner Lisa sms:a med Anna sent på kvällen. Guilty: Anna""
+6. De 4 misstänkta ska vara älskare/den tredje personen, INTE den som misstänker!
+
+STRUKTUR:
+- Utomstående person (Josef/Greta/Erik/Lisa/etc) är den som anlitar detektiven
+- Deras partner (också utomstående) misstänks vara otrogen
+- EN av de 4 ({suspectsString}) är älskaren/älskarinnan (guilty)
 
 REGLER FÖR FALLET:
 1. Svårighetsgrad: MEDEL. Gör det trovärdigt men inte uppenbart.
-2. Beskriv misstankarna, observationer, och beteendeförändringar.
+2. Beskriv misstankarna, observationer, beteendeförändringar.
 3. Skapa 2 ""InitialClues"":
-   - En ledtråd som pekar mot den otrogna personen (subtilt).
-   - En ledtråd som kan vara missförstånd eller oskuldig förklaring.
-4. Använd realistiska situationer (hemliga möten, konstiga sms, parfym, etc).
+   - En ledtråd som pekar mot rätt misstänkt älskare (subtilt).
+   - En ledtråd som kan vara missförstånd eller peka mot fel person.
+4. Använd realistiska situationer (hemliga möten, sms, parfym, lögner om var man varit).
 
 FORMAT:
 Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
 {{
-  ""description"": ""Realistisk berättelse om misstankarna (max 4 meningar). Beskriv vem som misstänker, vem som misstänks, och varför."",
-  ""guilty"": ""Namn på den som faktiskt ÄR otrogen (MÅSTE vara en av: {suspectsString})"",
+  ""description"": ""Beskriv situationen (max 4 meningar): Vem misstänker (utomstående), vem är partnern som misstänks, vilka observationer gjorts, varför misstankarna finns."",
+  ""guilty"": ""Namnet på älskaren/älskarinnan (MÅSTE vara EN av: {suspectsString})"",
   ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
 }}",
 

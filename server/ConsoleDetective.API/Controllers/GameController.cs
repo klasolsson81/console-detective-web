@@ -45,11 +45,42 @@ namespace ConsoleDetective.API.Controllers
                 {
                     var narrationText = $"{newCase.Category}. {newCase.Description}";
                     var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
-                    await _caseService.SaveNarrationAudioAsync(newCase.Id, audioBytes);
+
+                    // Spara bara om TTS lyckades
+                    if (audioBytes != null && audioBytes.Length > 0)
+                    {
+                        await _caseService.SaveNarrationAudioAsync(newCase.Id, audioBytes);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"⚠️ TTS returnerade null för case {newCase.Id}, spelet fortsätter utan ljud");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"⚠️ TTS-generering för case {newCase.Id} misslyckades: {ex.Message}");
+                }
+
+                // Generera TTS för alla initiala ledtrådar
+                foreach (var clue in newCase.Clues)
+                {
+                    try
+                    {
+                        var clueAudioBytes = await _ttsService.GenerateSpeechAsync(clue.Text);
+
+                        if (clueAudioBytes != null && clueAudioBytes.Length > 0)
+                        {
+                            await _caseService.SaveClueAudioAsync(clue.Id, clueAudioBytes);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"⚠️ TTS returnerade null för clue {clue.Id}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"⚠️ TTS-generering för clue {clue.Id} misslyckades: {ex.Message}");
+                    }
                 }
             }
 
@@ -64,7 +95,16 @@ namespace ConsoleDetective.API.Controllers
 
                 // Generera TTS audio
                 var audioBytes = await _ttsService.GenerateSpeechAsync(fullNarration);
-                narrationAudioBase64 = Convert.ToBase64String(audioBytes);
+
+                // Konvertera till base64 bara om TTS lyckades
+                if (audioBytes != null && audioBytes.Length > 0)
+                {
+                    narrationAudioBase64 = Convert.ToBase64String(audioBytes);
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ TTS returnerade null för fullständig narration, spelet fortsätter utan ljud");
+                }
             }
             catch (Exception ex)
             {
