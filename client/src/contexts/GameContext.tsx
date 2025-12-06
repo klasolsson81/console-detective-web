@@ -44,21 +44,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('audioMuted', isMuted.toString());
   }, [isMuted]);
 
-  // Start/stop background music based on session
+  // Start background music on app load (not dependent on session)
   useEffect(() => {
-    if (session && !backgroundMusicRef.current) {
-      // Start background music when game session starts
+    if (!backgroundMusicRef.current) {
+      // Start background music when app loads
       backgroundMusicRef.current = new Howl({
         src: ['/sounds/Covert_Affair_Film_Noire_Kevin_MacLeod.mp3'],
         loop: true,
         volume: 0.3,
         autoplay: !isMuted
       });
-    } else if (!session && backgroundMusicRef.current) {
-      // Stop and unload background music when session ends
-      backgroundMusicRef.current.stop();
-      backgroundMusicRef.current.unload();
-      backgroundMusicRef.current = null;
     }
 
     return () => {
@@ -67,7 +62,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         backgroundMusicRef.current.unload();
       }
     };
-  }, [session, isMuted]);
+  }, [isMuted]);
 
   // Control background music based on mute state
   useEffect(() => {
