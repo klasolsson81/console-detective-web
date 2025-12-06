@@ -289,29 +289,31 @@ const CasePage = () => {
   if (!caseData) return <div className="min-h-screen bg-noir-darkest flex items-center justify-center"><p className="text-gray-400">Case not found</p></div>;
 
   return (
-    <div className="min-h-screen bg-noir-darkest pb-12 relative">
-      <div className="bg-noir-darker border-b border-gray-800 py-6">
-        <div className="container mx-auto px-4">
-          <button onClick={() => navigate('/dashboard')} className="btn-ghost mb-4 flex items-center gap-2"><ArrowLeft size={20} />{t('common.back')}</button>
-          <h1 className="text-4xl md:text-5xl font-noir text-noir-accent mb-2">{caseData.title}</h1>
-          <p className="text-gray-400">{caseData.location}</p>
+    <div className="min-h-screen bg-noir-darkest pb-12 sm:pb-16 lg:pb-20 relative">
+      <div className="bg-noir-darker border-b border-gray-800 py-4 sm:py-6">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <button onClick={() => navigate('/dashboard')} className="btn-ghost mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+            <ArrowLeft size={18} className="sm:w-5 sm:h-5" />{t('common.back')}
+          </button>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-noir text-noir-accent mb-2 leading-tight">{caseData.title}</h1>
+          <p className="text-sm sm:text-base text-gray-400">{caseData.location}</p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card-noir p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-noir text-gray-100">{t('case.details')}</h2>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <div className="card-noir p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+                <h2 className="text-xl sm:text-2xl font-noir text-gray-100">{t('case.details')}</h2>
                 {narrationSoundRef.current && (
                   <button
                     onClick={toggleNarration}
-                    className="btn-secondary flex items-center gap-2"
+                    className="btn-secondary flex items-center justify-center gap-2 text-sm sm:text-base py-2"
                     title="Toggle narration"
                   >
-                    {narrationPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                    <span>{narrationPlaying ? 'Pausera' : 'Spela upp'}</span>
+                    {narrationPlaying ? <Volume2 size={18} className="sm:w-5 sm:h-5" /> : <VolumeX size={18} className="sm:w-5 sm:h-5" />}
+                    <span className="whitespace-nowrap">{narrationPlaying ? 'Pausera' : 'Spela upp'}</span>
                   </button>
                 )}
               </div>
@@ -361,12 +363,18 @@ const CasePage = () => {
                   )}
                 </div>
               )}
-              <p className="text-gray-300 leading-relaxed">{caseData.description}</p>
+              <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{caseData.description}</p>
             </div>
-            <div className="card-noir p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-noir text-gray-100 flex items-center gap-2"><Lightbulb className="text-noir-accent" size={28} />{t('case.clues')}</h2>
-                <button onClick={handleInvestigate} disabled={investigating} className="btn-primary flex items-center gap-2"><Search size={20} />{investigating ? t('case.investigating') : t('case.investigate')}</button>
+            <div className="card-noir p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+                <h2 className="text-xl sm:text-2xl font-noir text-gray-100 flex items-center gap-2">
+                  <Lightbulb className="text-noir-accent" size={24} />
+                  <span className="sm:inline">{t('case.clues')}</span>
+                </h2>
+                <button onClick={handleInvestigate} disabled={investigating} className="btn-primary flex items-center justify-center gap-2 text-sm sm:text-base py-2 whitespace-nowrap">
+                  <Search size={18} className="sm:w-5 sm:h-5" />
+                  {investigating ? t('case.investigating') : t('case.investigate')}
+                </button>
               </div>
               {caseData.clues && caseData.clues.length > 0 ? (
                 <div className="space-y-3">
