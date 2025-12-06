@@ -20,8 +20,14 @@ namespace ConsoleDetective.API.Services
         // Fallback röst Adam (gratis, engelska men fungerar för enkelt ljud)
         public const string FallbackVoiceAdam = "pNInz6obpgDQGcFmaJgB";
 
-        // Edge-TTS svensk röst (helt gratis, inga begränsningar)
-        public const string EdgeSwedishVoice = "sv-SE-SofieNeural";
+        // Edge-TTS svenska röster (helt gratis, inga begränsningar)
+        // Lista över flera röster som fallback om en inte fungerar
+        private static readonly string[] EdgeSwedishVoices = new[]
+        {
+            "sv-SE-SofieNeural",    // Primär kvinnlig svensk röst
+            "sv-SE-MattiasNeural",  // Alternativ manlig svensk röst
+            "sv-SE-HilleviNeural"   // Alternativ kvinnlig svensk röst
+        };
 
         public TextToSpeechService(IConfiguration configuration, ILogger<TextToSpeechService> logger)
         {
@@ -102,16 +108,16 @@ namespace ConsoleDetective.API.Services
 
             // Tier 3: Fallback till Edge-TTS (Microsoft - helt gratis)
             _logger.LogWarning("⚠️ ElevenLabs misslyckades, försöker med Edge-TTS (gratis Microsoft TTS)");
-            audioBytes = await TryGenerateWithEdgeTtsAsync(text);
-            if (audioBytes != null)
+            var (edgeAudioBytes, usedVoice) = await TryGenerateWithEdgeTtsAsync(text);
+            if (edgeAudioBytes != null)
             {
                 // Spara i cache med Edge voice
-                var edgeCacheKey = $"{EdgeSwedishVoice}:{text}";
+                var edgeCacheKey = $"edge-tts:{usedVoice}:{text}";
                 if (_audioCache.Count < 100)
                 {
-                    _audioCache.TryAdd(edgeCacheKey, audioBytes);
+                    _audioCache.TryAdd(edgeCacheKey, edgeAudioBytes);
                 }
-                return audioBytes;
+                return edgeAudioBytes;
             }
 
             // Tier 4: Inget ljud - spelet fortsätter i tyst läge
@@ -191,21 +197,52 @@ namespace ConsoleDetective.API.Services
 
         /// <summary>
         /// Försöker generera tal med Edge-TTS (Microsoft - helt gratis)
+        /// Försöker med flera svenska röster tills en fungerar
         /// </summary>
-        private async Task<byte[]?> TryGenerateWithEdgeTtsAsync(string text)
+        /// <returns>Tuple med audio bytes och rösten som användes, eller (null, null) om alla misslyckades</returns>
+        private async Task<(byte[]? audioBytes, string? voice)> TryGenerateWithEdgeTtsAsync(string text)
         {
+            // Försök med varje svensk röst tills en fungerar
+            foreach (var voice in EdgeSwedishVoices)
+            {
+                var result = await TryGenerateWithSingleEdgeVoiceAsync(text, voice);
+                if (result != null)
+                {
+                    return (result, voice);
+                }
+            }
+
+            _logger.LogError("❌ Alla Edge-TTS röster misslyckades");
+            return (null, null);
+        }
+
+        /// <summary>
+        /// Försöker generera tal med en specifik Edge-TTS röst
+        /// </summary>
+        private async Task<byte[]?> TryGenerateWithSingleEdgeVoiceAsync(string text, string voice)
+        {
+            var tempTextFile = string.Empty;
+            var tempAudioFile = string.Empty;
+
             try
             {
-                _logger.LogInformation("🎤 Genererar tal med Edge-TTS (Microsoft gratis röst)");
+                _logger.LogInformation("🎤 Genererar tal med Edge-TTS (röst: {Voice})", voice);
 
-                // Skapa temporär fil för output
-                var tempFile = Path.Combine(Path.GetTempPath(), $"tts_{Guid.NewGuid()}.mp3");
+                // Skapa temporära filer
+                tempTextFile = Path.Combine(Path.GetTempPath(), $"tts_input_{Guid.NewGuid()}.txt");
+                tempAudioFile = Path.Combine(Path.GetTempPath(), $"tts_output_{Guid.NewGuid()}.mp3");
 
-                // Förbered edge-tts kommando
+                // Skriv texten till temporär fil för att undvika escape-problem
+                await File.WriteAllTextAsync(tempTextFile, text, System.Text.Encoding.UTF8);
+
+                _logger.LogInformation("📝 Edge-TTS kommando: edge-tts --voice {Voice} --file {TextFile} --write-media {AudioFile}",
+                    voice, tempTextFile, tempAudioFile);
+
+                // Förbered edge-tts kommando (läs från fil istället för argument)
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "edge-tts",
-                    Arguments = $"--voice {EdgeSwedishVoice} --text \"{text.Replace("\"", "\\\"")}\" --write-media \"{tempFile}\"",
+                    Arguments = $"--voice {voice} --file \"{tempTextFile}\" --write-media \"{tempAudioFile}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -220,40 +257,58 @@ namespace ConsoleDetective.API.Services
 
                 await process.WaitForExitAsync();
 
+                if (!string.IsNullOrWhiteSpace(output))
+                {
+                    _logger.LogInformation("📤 Edge-TTS stdout: {Output}", output);
+                }
+
                 if (process.ExitCode != 0)
                 {
-                    _logger.LogError("❌ Edge-TTS process misslyckades: {Error}", error);
+                    _logger.LogWarning("⚠️ Edge-TTS misslyckades med röst {Voice} (exit code: {ExitCode}): {Error}",
+                        voice, process.ExitCode, error);
                     return null;
                 }
 
                 // Läs den genererade filen
-                if (File.Exists(tempFile))
+                if (File.Exists(tempAudioFile))
                 {
-                    var audioBytes = await File.ReadAllBytesAsync(tempFile);
-
-                    // Rensa upp temporär fil
-                    try
+                    var audioBytes = await File.ReadAllBytesAsync(tempAudioFile);
+                    if (audioBytes.Length > 0)
                     {
-                        File.Delete(tempFile);
+                        _logger.LogInformation("✅ Tal genererat med Edge-TTS röst {Voice} ({Size} bytes)", voice, audioBytes.Length);
+                        return audioBytes;
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.LogWarning(ex, "Kunde inte ta bort temporär fil {TempFile}", tempFile);
+                        _logger.LogWarning("⚠️ Edge-TTS skapade tom output-fil för röst {Voice}", voice);
+                        return null;
                     }
-
-                    _logger.LogInformation("✅ Tal genererat med Edge-TTS ({Size} bytes)", audioBytes.Length);
-                    return audioBytes;
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️ Edge-TTS skapade ingen output-fil");
+                    _logger.LogWarning("⚠️ Edge-TTS skapade ingen output-fil för röst {Voice}", voice);
                     return null;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Exception vid generering av tal med Edge-TTS");
+                _logger.LogWarning(ex, "⚠️ Exception vid generering av tal med Edge-TTS röst {Voice}", voice);
                 return null;
+            }
+            finally
+            {
+                // Rensa upp temporära filer
+                try
+                {
+                    if (File.Exists(tempTextFile))
+                        File.Delete(tempTextFile);
+                    if (File.Exists(tempAudioFile))
+                        File.Delete(tempAudioFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Kunde inte ta bort temporära filer");
+                }
             }
         }
 
