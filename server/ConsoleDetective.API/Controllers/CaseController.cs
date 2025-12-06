@@ -140,6 +140,24 @@ namespace ConsoleDetective.API.Controllers
                 // Spara ledtråd
                 var savedClue = await _caseService.AddClueAsync(caseId, clue);
 
+                // Generera TTS för ledtråden i bakgrunden (fire-and-forget)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var audioBytes = await _ttsService.GenerateSpeechAsync(savedClue.Text);
+                        if (audioBytes != null && audioBytes.Length > 0)
+                        {
+                            await _caseService.SaveClueAudioAsync(savedClue.Id, audioBytes);
+                            _logger.LogInformation("TTS genererad för clue {ClueId}", savedClue.Id);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Kunde inte generera TTS för clue {ClueId}", savedClue.Id);
+                    }
+                });
+
                 // Mappa till DTO för att undvika circular reference
                 var clueDto = new ClueDto
                 {

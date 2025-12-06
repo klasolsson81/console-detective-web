@@ -1,54 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
 import { LeaderboardEntry } from '../types';
 import { Eye, Trophy, LogOut, Skull, Briefcase, Home, Heart, Star, CheckCircle } from 'lucide-react';
-import { Howl } from 'howler';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { session, endGame, isMuted } = useGame();
+  const { session, endGame } = useGame();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [submittingScore, setSubmittingScore] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const ambientSoundRef = useRef<Howl | null>(null);
 
   // Parallax effect
   const { scrollY } = useScroll();
   const backgroundY = useTransform(scrollY, [0, 500], [0, 150]);
-
-  // Ambient sound setup
-  useEffect(() => {
-    if (!ambientSoundRef.current) {
-      ambientSoundRef.current = new Howl({
-        src: ['/sounds/Covert_Affair_Film_Noire_Kevin_MacLeod.mp3'],
-        loop: true,
-        volume: 0.3,
-        autoplay: !isMuted // Don't autoplay if muted
-      });
-    }
-
-    return () => {
-      if (ambientSoundRef.current) {
-        ambientSoundRef.current.stop();
-        ambientSoundRef.current.unload();
-      }
-    };
-  }, [isMuted]);
-
-  // Control ambient sound based on mute state
-  useEffect(() => {
-    if (ambientSoundRef.current) {
-      if (isMuted) {
-        ambientSoundRef.current.pause();
-      } else {
-        ambientSoundRef.current.play();
-      }
-    }
-  }, [isMuted]);
 
   useEffect(() => {
     if (!session) {

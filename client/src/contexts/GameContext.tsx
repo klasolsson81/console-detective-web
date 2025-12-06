@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { GameSession } from '../types';
+import { Howl } from 'howler';
 
 interface GameContextType {
   session: GameSession | null;
@@ -27,6 +28,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     return saved === 'true';
   });
 
+  // Background music ref
+  const backgroundMusicRef = useRef<Howl | null>(null);
+
   useEffect(() => {
     if (session) {
       sessionStorage.setItem('gameSession', JSON.stringify(session));
@@ -38,6 +42,42 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Persist mute state
   useEffect(() => {
     localStorage.setItem('audioMuted', isMuted.toString());
+  }, [isMuted]);
+
+  // Start/stop background music based on session
+  useEffect(() => {
+    if (session && !backgroundMusicRef.current) {
+      // Start background music when game session starts
+      backgroundMusicRef.current = new Howl({
+        src: ['/sounds/Covert_Affair_Film_Noire_Kevin_MacLeod.mp3'],
+        loop: true,
+        volume: 0.3,
+        autoplay: !isMuted
+      });
+    } else if (!session && backgroundMusicRef.current) {
+      // Stop and unload background music when session ends
+      backgroundMusicRef.current.stop();
+      backgroundMusicRef.current.unload();
+      backgroundMusicRef.current = null;
+    }
+
+    return () => {
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.stop();
+        backgroundMusicRef.current.unload();
+      }
+    };
+  }, [session, isMuted]);
+
+  // Control background music based on mute state
+  useEffect(() => {
+    if (backgroundMusicRef.current) {
+      if (isMuted) {
+        backgroundMusicRef.current.pause();
+      } else {
+        backgroundMusicRef.current.play();
+      }
+    }
   }, [isMuted]);
 
   const toggleMute = () => {

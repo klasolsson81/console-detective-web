@@ -186,10 +186,16 @@ const CasePage = () => {
   const playClueAudio = async (clueId: string) => {
     if (isMuted) return; // Don't play if muted
 
+    // If the same clue is already playing, don't restart it
+    if (playingClueId === clueId && clueSoundRef.current && clueSoundRef.current.playing()) {
+      console.log('🎙️ Clue already playing, ignoring click');
+      return;
+    }
+
     console.log('🎙️ Loading audio for clue:', clueId);
 
-    // Stop currently playing clue
-    if (clueSoundRef.current) {
+    // Stop currently playing clue only if it's a different clue
+    if (clueSoundRef.current && playingClueId !== clueId) {
       clueSoundRef.current.unload();
     }
 
