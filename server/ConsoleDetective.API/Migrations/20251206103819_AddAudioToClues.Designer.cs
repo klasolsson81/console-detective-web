@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ConsoleDetective.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251206100023_AddAudioToClues")]
+    [Migration("20251206103819_AddAudioToClues")]
     partial class AddAudioToClues
     {
         /// <inheritdoc />
