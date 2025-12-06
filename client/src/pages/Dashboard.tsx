@@ -24,9 +24,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (!ambientSoundRef.current) {
       ambientSoundRef.current = new Howl({
-        src: ['/sounds/ambience/city-night.mp3'],
+        src: ['/sounds/Covert_Affair_Film_Noire_Kevin_MacLeod.mp3'],
         loop: true,
-        volume: 0.2,
+        volume: 0.3,
         autoplay: true
       });
     }

@@ -1,56 +1,167 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
-import { User } from 'lucide-react';
+import { User, Brain, Music, FileText, Search } from 'lucide-react';
+
+const detectiveTips = [
+  "Tips: Lyssna noga på vad misstänkta säger - ibland avslöjar de sig själva.",
+  "Tips: Kontrollera alibin noggrant. Den skyldige ljuger alltid om något.",
+  "Tips: Leta efter motsägelser i vittnesmål.",
+  "Tips: Motiv, tillfälle och metod - de tre pelarna i varje utredning.",
+  "Tips: Ibland är det den minsta detaljen som löser fallet.",
+  "Tips: Misstro alltid den som verkar för hjälpsam.",
+  "Tips: Håll reda på alla ledtrådar - koppla samman dem.",
+  "Tips: Den som har mest att förlora har oftast mest att dölja."
+];
+
+const loadingStages = [
+  { label: 'Genererar brott...', icon: Brain, time: 0 },
+  { label: 'Skapar alibin...', icon: FileText, time: 25 },
+  { label: 'Placerar ledtrådar...', icon: Search, time: 50 },
+  { label: 'Komponerar musik...', icon: Music, time: 75 }
+];
 
 const SetupPage = () => {
   const navigate = useNavigate();
   const { startGame } = useGame();
-  
+
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState<'man' | 'woman'>('man');
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTip, setCurrentTip] = useState(0);
+  const [currentStage, setCurrentStage] = useState(0);
+
+  // Progress animation during loading
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) return prev; // Stop at 95%, complete when API returns
+          return prev + 1;
+        });
+      }, 600); // ~60 seconds to reach 95%
+
+      return () => clearInterval(interval);
+    }
+  }, [loading]);
+
+  // Update current stage based on progress
+  useEffect(() => {
+    const stage = loadingStages.findIndex((s, i) => {
+      const nextStage = loadingStages[i + 1];
+      return progress >= s.time && (!nextStage || progress < nextStage.time);
+    });
+    setCurrentStage(Math.max(0, stage));
+  }, [progress]);
+
+  // Rotate tips every 4 seconds
+  useEffect(() => {
+    if (loading) {
+      const tipInterval = setInterval(() => {
+        setCurrentTip((prev) => (prev + 1) % detectiveTips.length);
+      }, 4000);
+
+      return () => clearInterval(tipInterval);
+    }
+  }, [loading]);
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     setLoading(true);
+    setProgress(0);
 
     try {
       // 1. Starta generering av session och fall via API
       const sessionData = await gameAPI.startSession();
-      
-      // 2. Spara sessionen i context (Global state)
+
+      // 2. När API returnerar, sätt progress till 100%
+      setProgress(100);
+
+      // 3. Spara sessionen i context (Global state)
       startGame(name, avatar, sessionData);
-      
-      // 3. VIKTIGT: En liten paus för att säkra att state hinner uppdateras
-      // innan vi byter sida. Detta förhindrar att man loopas tillbaka.
+
+      // 4. Kort paus för att visa 100% completion
       setTimeout(() => {
         navigate('/dashboard');
-      }, 100);
+      }, 500);
 
     } catch (error) {
       console.error("Failed to start game", error);
-      // Här kan du visa ett felmeddelande om du vill
       setLoading(false);
+      setProgress(0);
     }
   };
+
+  const CurrentStageIcon = loadingStages[currentStage]?.icon || Brain;
 
   return (
     <div className="min-h-screen bg-noir-darkest flex items-center justify-center px-4">
       {loading ? (
-        <div className="text-center">
-            {/* Spinner */}
-            <div className="w-20 h-20 border-4 border-noir-accent border-t-transparent rounded-full animate-spin mx-auto mb-8"></div>
-            
-            {/* Laddningstext */}
-            <h2 className="text-3xl font-noir text-noir-accent mb-4 animate-pulse">AI Genererar Fall...</h2>
-            <p className="text-gray-400 font-detective text-lg">Skapar motiv, alibin och intriger.</p>
-            <p className="text-sm text-gray-600 mt-6 font-detective">(Vänta kvar, detektiv...)</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-2xl w-full px-8"
+        >
+          {/* Animated Icon */}
+          <motion.div
+            key={currentStage}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200 }}
+            className="mb-8"
+          >
+            <CurrentStageIcon
+              size={80}
+              className="mx-auto text-noir-accent drop-shadow-[0_0_15px_rgba(212,175,55,0.6)]"
+            />
+          </motion.div>
+
+          {/* Main Title */}
+          <h2 className="text-4xl font-noir text-noir-accent mb-6 tracking-wide">
+            {loadingStages[currentStage]?.label || 'Förbereder...'}
+          </h2>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-800 rounded-full h-4 mb-4 overflow-hidden border border-gray-700">
+            <motion.div
+              className="h-full bg-gradient-to-r from-noir-accent via-yellow-500 to-noir-accent rounded-full shadow-[0_0_10px_rgba(212,175,55,0.5)]"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+
+          {/* Progress Percentage */}
+          <p className="text-noir-accent font-mono text-2xl font-bold mb-8">
+            {progress}%
+          </p>
+
+          {/* Rotating Tips */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTip}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="min-h-[60px] flex items-center justify-center"
+            >
+              <p className="text-gray-400 font-detective text-lg italic px-4">
+                {detectiveTips[currentTip]}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Subtle note */}
+          <p className="text-sm text-gray-600 mt-8 font-detective">
+            Vänligen vänta medan AI-detektiven förbereder dina fall...
+          </p>
+        </motion.div>
       ) : (
         <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
