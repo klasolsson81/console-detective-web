@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import { Howl } from 'howler';
 import { Player } from '@lottiefiles/react-lottie-player';
+import FlyingMoney from '../components/animations/FlyingMoney';
+import FlashlightSweep from '../components/animations/FlashlightSweep';
+import RosePetals from '../components/animations/RosePetals';
 
 const getImagePath = (folder: 'suspects' | 'locations', name: string) => {
   if (!name) return '/images/suspects/unknown.png';
@@ -320,7 +323,7 @@ const CasePage = () => {
               {caseData.location && (
                 <div className="mb-4 rounded overflow-hidden border border-gray-700 relative">
                   <img src={getImagePath('locations', caseData.location)} alt={caseData.location} className="w-full h-64 object-cover" />
-                  {/* Lottie animation overlays based on case category */}
+                  {/* Animation overlays based on case category */}
                   {caseData.category === 'Mord' && (
                     <div className="absolute inset-0 pointer-events-none">
                       <Player
@@ -331,36 +334,9 @@ const CasePage = () => {
                       />
                     </div>
                   )}
-                  {caseData.category === 'Bankrån' && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <Player
-                        autoplay
-                        loop
-                        src="/animations/police-lights.json"
-                        style={{ width: '100%', height: '100%', opacity: 0.3 }}
-                      />
-                    </div>
-                  )}
-                  {caseData.category === 'Inbrott' && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <Player
-                        autoplay
-                        loop
-                        src="/animations/smoke.json"
-                        style={{ width: '100%', height: '100%', opacity: 0.25 }}
-                      />
-                    </div>
-                  )}
-                  {caseData.category === 'Otrohet' && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <Player
-                        autoplay
-                        loop
-                        src="/animations/neon-flicker.json"
-                        style={{ width: '100%', height: '100%', opacity: 0.2 }}
-                      />
-                    </div>
-                  )}
+                  {caseData.category === 'Bankrån' && <FlyingMoney />}
+                  {caseData.category === 'Inbrott' && <FlashlightSweep />}
+                  {caseData.category === 'Otrohet' && <RosePetals />}
                 </div>
               )}
               <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{caseData.description}</p>
