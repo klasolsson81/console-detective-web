@@ -15,6 +15,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# Install Python and edge-tts for free TTS fallback
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install edge-tts --break-system-packages && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Railway uses PORT environment variable
 ENV ASPNETCORE_URLS=http://+:$PORT
 
