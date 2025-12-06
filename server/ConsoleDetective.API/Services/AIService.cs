@@ -39,41 +39,10 @@ namespace ConsoleDetective.API.Services
 
             var locations = GetLocationsForCategory(category);
             var location = locations[Random.Shared.Next(locations.Length)];
-            
+
             var suspectsString = string.Join(", ", _validSuspects);
 
-            string prompt = $@"
-DU ÄR EN MÄSTARE PÅ NOIR-MYSTERIER.
-Din uppgift: Skapa ett utmanande mordmysterium/brott som kräver deduktion.
-
-PARAMETRAR:
-- Kategori: {category}
-- Plats: {location}
-- Möjliga misstänkta (ANVÄND ENDAST DESSA): {suspectsString}
-- Välj EN skyldig från listan.
-
-KRITISKA REGLER FÖR NAMN:
-1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
-2. Offret/brottsoffret ska ALLTID kallas ""offret"" eller ""brottsoffret"" - ALDRIG ett specifikt namn
-3. HITTA ALDRIG PÅ nya namn som Elias, Marcus, etc.
-4. Exempel KORREKT: ""Ett brutalt mord har begåtts på offret...""
-5. Exempel FEL: ""Elias hittades död..."" (använd ""offret"" istället)
-
-REGLER FÖR FALLET:
-1. Svårighetsgrad: HÖG. Gör det inte uppenbart.
-2. Den skyldige ska ha ett motiv som inte syns direkt.
-3. Skapa 2 ""InitialClues"":
-   - En ledtråd ska vara vag men korrekt (pekar mot den skyldige).
-   - En ledtråd ska vara en ""Red Herring"" (falskt spår) som pekar mot en oskyldig.
-4. Beskrivningen ska vara atmosfärisk, mörk och 'gritty'.
-
-FORMAT:
-Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
-{{
-  ""description"": ""Atmosfärisk berättelse om brottet (max 4 meningar). VIKTIGT: Kalla offret för 'offret' INTE ett specifikt namn!"",
-  ""guilty"": ""Namn på den skyldige (MÅSTE vara en av: {suspectsString})"",
-  ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
-}}";
+            string prompt = GetCategorySpecificPrompt(category, location, suspectsString);
 
             try
             {
@@ -129,29 +98,44 @@ Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
         /// </summary>
         public async Task<string> GenerateInvestigationClueAsync(Case caseData)
         {
-            var clueTypes = new[] 
-            { 
-                "Ett fysiskt bevis som tappats", 
-                "En kvarglömd lapp eller digitalt spår", 
-                "Bara en atmosfärisk iakttagelse (inget bevis)", 
-                "Ett vilseledande spår (något som ser misstänkt ut men är oskyldigt)" 
-            };
+            var clueTypes = caseData.Category == "Otrohet"
+                ? new[]
+                {
+                    "Ett digitalt spår (sms, kvitto, foto)",
+                    "En observation om beteende eller förändring",
+                    "Ett fysiskt bevis (parfym, hårstrå, accessoar)",
+                    "Ett vilseledande spår (något oskyldigt som ser misstänkt ut)"
+                }
+                : new[]
+                {
+                    "Ett fysiskt bevis som tappats",
+                    "En kvarglömd lapp eller digitalt spår",
+                    "Bara en atmosfärisk iakttagelse (inget bevis)",
+                    "Ett vilseledande spår (något som ser misstänkt ut men är oskyldigt)"
+                };
+
             var selectedType = clueTypes[Random.Shared.Next(clueTypes.Length)];
+
+            string categorySpecificRules = caseData.Category == "Otrohet"
+                ? @"- Detta är ett otrohetfall, INTE ett brott.
+- Använd termer som ""personen"", ""partnern"", ""relationen"" - INTE ""offret"" eller ""brottet"".
+- Ledtråden ska handla om misstänkt affär, hemliga möten, lögner etc."
+                : @"- Kalla offret för ""offret"" eller ""brottsoffret"" - ALDRIG ett specifikt namn";
 
             string prompt = $@"
 SITUATION:
-Brott: {caseData.Title}
+Fall: {caseData.Title}
 Plats: {caseData.Location}
 Skyldig: {caseData.Guilty}
-Möjliga misstänkta: {string.Join(", ", _validSuspects)}
+Möjliga personer: {string.Join(", ", _validSuspects)}
 
 UPPGIFT:
-Spelaren undersöker rummet noggrant.
+Spelaren undersöker platsen noggrant.
 Skriv vad de hittar. Det ska vara av typen: ""{selectedType}"".
 
 NAMNREGLER (KRITISKT):
-- Nämn ENDAST de misstänkta vid namn: {string.Join(", ", _validSuspects)}
-- Kalla offret för ""offret"" eller ""brottsoffret"" - ALDRIG ett specifikt namn
+- Nämn ENDAST dessa personer vid namn: {string.Join(", ", _validSuspects)}
+{categorySpecificRules}
 - Hitta ALDRIG på nya namn
 
 VIKTIGT:
@@ -224,16 +208,17 @@ Strategi:
 - Du litar inte på {scapegoat}.";
             }
 
+            // Get category-specific interrogation rules
+            string categoryRules = GetInterrogationCategoryRules(caseData.Category);
+
             string systemPrompt = $@"
 Du spelar rollen av {suspectName} i ett förhör.
 
 VÄRLDSREGLER (KRITISKT VIKTIGT):
 1. De ENDA personerna som existerar och får nämnas vid namn är: {string.Join(", ", _validSuspects)}.
-2. Offret/brottsoffret ska ALLTID kallas ""offret"", ""brottsoffret"" eller ""den mördade"" - ALDRIG ett specifikt namn.
-3. Hitta ALDRIG på nya namn som Elias, Marcus, Sofia etc.
-4. Den skyldige i detta fall är: {caseData.Guilty}
-5. Exempel KORREKT: ""Jag såg Carlos vid brottsplatsen när offret attackerades""
-6. Exempel FEL: ""Jag såg Carlos när han dödade Elias"" (använd ""offret"" istället för Elias)
+{categoryRules}
+2. Hitta ALDRIG på nya namn som Elias, Marcus, Sofia etc.
+3. Den skyldige i detta fall är: {caseData.Guilty}
 
 KONTEXT:
 Brott: {caseData.Title} på {caseData.Location}.
@@ -244,7 +229,7 @@ INSTRUKTIONER FÖR SVARET:
 - Svara kort (1-3 meningar).
 - Använd talspråk och karaktärens röst.
 - Skriv på svenska.
-- NÄMN ENDAST de 4 misstänkta vid namn, ALDRIG offret.
+- NÄMN ENDAST de 4 misstänkta vid namn.
 - Inkludera känslo-tagg först i parentes, ex: (nervös), (arg).";
 
             var chatMessages = new List<OpenAIChatMessage>
@@ -338,6 +323,165 @@ Om NEJ: Svara ""INGEN"".";
             "Otrohet" => new[] { "Hotell", "Restaurang", "Lägenheten", "Strandpromenaden" },
             _ => new[] { "Okänd plats" }
         };
+
+        private string GetInterrogationCategoryRules(string category)
+        {
+            return category switch
+            {
+                "Mord" => @"- Offret/mordoffret ska ALLTID kallas ""offret"", ""brottsoffret"" eller ""den mördade"" - ALDRIG ett specifikt namn.
+- Exempel KORREKT: ""Jag såg Carlos vid brottsplatsen när offret attackerades""
+- Exempel FEL: ""Jag såg Carlos när han dödade Elias"" (använd ""offret"" istället för Elias)",
+
+                "Bankrån" => @"- Prata om rånet, pengarna som stals, och vad du såg.
+- Nämn inga andra namn än de 4 misstänkta.",
+
+                "Inbrott" => @"- Prata om inbrottet, vad som stals, och vad du vet.
+- Nämn inga andra namn än de 4 misstänkta.",
+
+                "Otrohet" => @"- Detta handlar om en misstänkt kärleksaffär, INTE ett brott eller mord.
+- Prata om relationer, misstankar, observationer av beteende.
+- Använd termer som ""partnern"", ""äktenskapet"", ""relationen"" - INTE ""offret"" eller ""brottet"".
+- Nämn inga andra namn än de 4 personerna i situationen.",
+
+                _ => @"- Nämn inga andra namn än de 4 misstänkta."
+            };
+        }
+
+        private string GetCategorySpecificPrompt(string category, string location, string suspectsString)
+        {
+            return category switch
+            {
+                "Mord" => $@"
+DU ÄR EN MÄSTARE PÅ NOIR-MYSTERIER.
+Din uppgift: Skapa ett utmanande mordmysterium som kräver deduktion.
+
+PARAMETRAR:
+- Kategori: Mord
+- Plats: {location}
+- Möjliga misstänkta (ANVÄND ENDAST DESSA): {suspectsString}
+- Välj EN skyldig från listan.
+
+KRITISKA REGLER FÖR NAMN:
+1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
+2. Offret/mordoffret ska ALLTID kallas ""offret"" eller ""mordoffret"" - ALDRIG ett specifikt namn
+3. HITTA ALDRIG PÅ nya namn som Elias, Marcus, etc.
+4. Exempel KORREKT: ""Ett brutalt mord har begåtts på offret...""
+5. Exempel FEL: ""Elias hittades död..."" (använd ""offret"" istället)
+
+REGLER FÖR FALLET:
+1. Svårighetsgrad: HÖG. Gör det inte uppenbart.
+2. Den skyldige ska ha ett motiv som inte syns direkt.
+3. Skapa 2 ""InitialClues"":
+   - En ledtråd ska vara vag men korrekt (pekar mot den skyldige).
+   - En ledtråd ska vara en ""Red Herring"" (falskt spår) som pekar mot en oskyldig.
+4. Beskrivningen ska vara atmosfärisk, mörk och 'gritty'.
+
+FORMAT:
+Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
+{{
+  ""description"": ""Atmosfärisk berättelse om mordet (max 4 meningar). VIKTIGT: Kalla offret för 'offret' INTE ett specifikt namn!"",
+  ""guilty"": ""Namn på mördaren (MÅSTE vara en av: {suspectsString})"",
+  ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
+}}",
+
+                "Bankrån" => $@"
+DU ÄR EN MÄSTARE PÅ NOIR-MYSTERIER.
+Din uppgift: Skapa ett utmanande bankrån-mysterium.
+
+PARAMETRAR:
+- Kategori: Bankrån
+- Plats: {location}
+- Möjliga misstänkta (ANVÄND ENDAST DESSA): {suspectsString}
+- Välj EN skyldig från listan.
+
+KRITISKA REGLER FÖR NAMN:
+1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
+2. HITTA ALDRIG PÅ nya namn.
+3. Beskriv rånet, bytesbeloppet, och metoden.
+
+REGLER FÖR FALLET:
+1. Svårighetsgrad: HÖG. Gör det inte uppenbart vem som gjorde det.
+2. Den skyldige ska ha ett smart alibi eller motiv.
+3. Skapa 2 ""InitialClues"":
+   - En ledtråd ska vara vag men korrekt (pekar mot den skyldige).
+   - En ledtråd ska vara en ""Red Herring"" (falskt spår).
+4. Beskrivningen ska vara spännande och detaljerad.
+
+FORMAT:
+Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
+{{
+  ""description"": ""Spännande berättelse om bankrånet (max 4 meningar)."",
+  ""guilty"": ""Namn på rånaren (MÅSTE vara en av: {suspectsString})"",
+  ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
+}}",
+
+                "Inbrott" => $@"
+DU ÄR EN MÄSTARE PÅ NOIR-MYSTERIER.
+Din uppgift: Skapa ett utmanande inbrott-mysterium.
+
+PARAMETRAR:
+- Kategori: Inbrott
+- Plats: {location}
+- Möjliga misstänkta (ANVÄND ENDAST DESSA): {suspectsString}
+- Välj EN skyldig från listan.
+
+KRITISKA REGLER FÖR NAMN:
+1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
+2. HITTA ALDRIG PÅ nya namn.
+3. Beskriv vad som stulits och hur inbrottet gick till.
+
+REGLER FÖR FALLET:
+1. Svårighetsgrad: HÖG. Gör det inte uppenbart.
+2. Den skyldige ska ha tillgång eller kunskap om platsen.
+3. Skapa 2 ""InitialClues"":
+   - En ledtråd ska vara vag men korrekt (pekar mot den skyldige).
+   - En ledtråd ska vara en ""Red Herring"" (falskt spår).
+4. Beskrivningen ska vara atmosfärisk och spännande.
+
+FORMAT:
+Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
+{{
+  ""description"": ""Spännande berättelse om inbrottet (max 4 meningar)."",
+  ""guilty"": ""Namn på inbrottstjuven (MÅSTE vara en av: {suspectsString})"",
+  ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
+}}",
+
+                "Otrohet" => $@"
+DU ÄR EN ERFAREN PRIVATDETEKTIV.
+Din uppgift: Skapa en misstänkt kärleksaffär/otrohetssituation.
+
+PARAMETRAR:
+- Kategori: Misstänkt otrohet
+- Plats: {location}
+- Möjliga personer (ANVÄND ENDAST DESSA): {suspectsString}
+
+KRITISKA REGLER FÖR OTROHET:
+1. De ENDA personerna som får nämnas vid namn är: {suspectsString}
+2. HITTA ALDRIG PÅ nya namn.
+3. En person misstänker att sin partner är otrogen.
+4. ""Guilty"" = Den som faktiskt ÄR otrogen (den som har affären).
+5. Exempel: Om Nemo misstänker att Anna är otrogen med Carlos, då är Anna ""guilty"" (eller Carlos om han är den otrogna parten).
+6. VIKTIGT: Den som misstänker kan INTE vara ""guilty"" - det är partnern som är otrogen som är skyldig!
+
+REGLER FÖR FALLET:
+1. Svårighetsgrad: MEDEL. Gör det trovärdigt men inte uppenbart.
+2. Beskriv misstankarna, observationer, och beteendeförändringar.
+3. Skapa 2 ""InitialClues"":
+   - En ledtråd som pekar mot den otrogna personen (subtilt).
+   - En ledtråd som kan vara missförstånd eller oskuldig förklaring.
+4. Använd realistiska situationer (hemliga möten, konstiga sms, parfym, etc).
+
+FORMAT:
+Svara ENDAST med giltig JSON (ingen markdown, ingen annan text):
+{{
+  ""description"": ""Realistisk berättelse om misstankarna (max 4 meningar). Beskriv vem som misstänker, vem som misstänks, och varför."",
+  ""guilty"": ""Namn på den som faktiskt ÄR otrogen (MÅSTE vara en av: {suspectsString})"",
+  ""initialClues"": [""Ledtråd 1 text"", ""Ledtråd 2 text""]
+}}",
+
+                _ => throw new ArgumentException($"Okänd kategori: {category}")
+            };
+        }
 
         // Intern klass för JSON-parsing
         private class GeneratedCaseJson
