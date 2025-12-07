@@ -83,6 +83,17 @@ const Dashboard = () => {
     }
   };
 
+  // Hämta specifika transforms för varje bok
+  const getBookTransform = (category: string) => {
+    switch (category) {
+      case 'Mord': return { rotation: -15, translateY: 20, zIndex: 1 };
+      case 'Bankrån': return { rotation: -5, translateY: 0, zIndex: 2 };
+      case 'Inbrott': return { rotation: 5, translateY: 0, zIndex: 3 };
+      case 'Otrohet': return { rotation: 15, translateY: 20, zIndex: 4 };
+      default: return { rotation: 0, translateY: 0, zIndex: 1 };
+    }
+  };
+
   return (
     <div className="dashboard-container">
       {/* Parallax background */}
@@ -195,51 +206,46 @@ const Dashboard = () => {
                     {activeCases.length === 0 ? (
                       <p className="text-gray-500 italic text-center">Inga aktiva fall.</p>
                     ) : (
-                      <div className="books-wrapper">
-                        <div className="books-fan">
+                      <div className="books-container">
+                        <div className="books-fan-spread">
                           {activeCases.map((caseItem, idx) => {
-                            // Beräkna rotation och position för solfjäder-effekt
-                            const totalCases = activeCases.length;
-                            const centerIndex = (totalCases - 1) / 2;
-                            const offsetFromCenter = idx - centerIndex;
-                            const rotationDeg = offsetFromCenter * 6; // 6 grader per bok (mindre rotation)
-                            const offsetX = offsetFromCenter * 200; // 200px horisontell offset (mer space)
-                            const offsetY = Math.abs(offsetFromCenter) * 10; // Mindre böjning uppåt
+                            const transforms = getBookTransform(caseItem.category);
 
                             return (
                               <motion.div
                                 key={caseItem.id}
-                                initial={{ opacity: 0, scale: 0.8, rotateZ: -30 }}
-                                animate={{ opacity: 1, scale: 1, rotateZ: rotationDeg }}
-                                transition={{ delay: idx * 0.1, type: 'spring', stiffness: 120 }}
+                                initial={{ opacity: 0, scale: 0.8, rotateZ: transforms.rotation - 20 }}
+                                animate={{ opacity: 1, scale: 1, rotateZ: transforms.rotation }}
+                                transition={{ delay: idx * 0.15, type: 'spring', stiffness: 100 }}
                                 whileHover={{
-                                  y: -40,
+                                  y: -50,
                                   rotateZ: 0,
-                                  scale: 1.15,
-                                  zIndex: 20,
+                                  scale: 1.1,
+                                  zIndex: 50,
                                   transition: { duration: 0.3 }
                                 }}
                                 onClick={() => navigate(`/case/${caseItem.id}`)}
-                                className="book-card"
+                                className={`book-item book-${idx + 1}`}
                                 style={{
-                                  transform: `translateX(${offsetX}px) translateY(${offsetY}px) rotate(${rotationDeg}deg)`,
+                                  transform: `rotate(${transforms.rotation}deg) translateY(${transforms.translateY}px)`,
+                                  zIndex: transforms.zIndex,
                                 }}
                               >
-                                {/* BOK-BILD (BAS) */}
+                                {/* BOK-BILD */}
                                 <img
                                   src={getCaseBookImage(caseItem.category)}
                                   alt={caseItem.category}
-                                  className="book-image"
+                                  className="book-img"
                                   onError={(e) => {
-                                    console.error(`Failed to load image: ${getCaseBookImage(caseItem.category)}`);
-                                    e.currentTarget.src = '/images/casefolders/mord.png'; // Fallback
+                                    console.error(`Failed to load: ${getCaseBookImage(caseItem.category)}`);
+                                    e.currentTarget.src = '/images/casefolders/mord.png';
                                   }}
                                 />
 
-                                {/* TEXT OVANPÅ BOKEN (endast Titel + Plats) */}
-                                <div className="book-overlay-text">
-                                  <h3 className="book-case-title">{caseItem.title}</h3>
-                                  <p className="book-case-location">{caseItem.location}</p>
+                                {/* TEXT OVERLAY */}
+                                <div className="book-text-overlay">
+                                  <h3 className="book-title">{caseItem.title}</h3>
+                                  <p className="book-location">{caseItem.location}</p>
                                 </div>
                               </motion.div>
                             );
@@ -319,6 +325,10 @@ const Dashboard = () => {
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
 
+        * {
+          box-sizing: border-box;
+        }
+
         .dashboard-container {
           min-height: 100vh;
           background: #0A0A0A;
@@ -366,7 +376,7 @@ const Dashboard = () => {
           position: relative;
           z-index: 10;
           padding: 2rem 1rem;
-          padding-bottom: 180px; /* Space for footer buttons */
+          padding-bottom: 180px;
         }
 
         .avatar-frame {
@@ -405,7 +415,6 @@ const Dashboard = () => {
           letter-spacing: 2px;
         }
 
-        /* MAIN LAYOUT */
         .main-layout {
           max-width: 1400px;
           margin: 0 auto;
@@ -440,9 +449,13 @@ const Dashboard = () => {
           letter-spacing: 2px;
         }
 
-        /* BOK-MAPPAR - SOLFJÄDER LAYOUT */
-        .books-wrapper {
-          min-height: 600px;
+        /* ============================================
+           BÖCKER - SOLFJÄDER LAYOUT (NYA SYSTEMET)
+           ============================================ */
+
+        .books-container {
+          width: 100%;
+          min-height: 700px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -450,27 +463,49 @@ const Dashboard = () => {
           position: relative;
         }
 
-        .books-fan {
+        .books-fan-spread {
           position: relative;
           width: 100%;
-          max-width: 1400px;
-          min-height: 600px;
+          max-width: 1200px;
+          height: 600px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        .book-card {
+        /* VARJE BOK - STOR OCH ABSOLUT POSITIONERAD */
+        .book-item {
           position: absolute;
-          width: 400px;
+          width: 28%; /* 28% av containern = STOR! */
+          max-width: 350px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
-          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-          filter: drop-shadow(0 15px 40px rgba(0, 0, 0, 0.6));
+          transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.8));
         }
 
-        .book-image {
+        /* BOK 1 - MORD (Längst till vänster, lutad kraftigt vänster) */
+        .book-1 {
+          left: 5%;
+        }
+
+        /* BOK 2 - BANKRÅN (Lite till vänster, lite lutning vänster) */
+        .book-2 {
+          left: 25%;
+        }
+
+        /* BOK 3 - INBROTT (Lite till höger, lite lutning höger) */
+        .book-3 {
+          left: 48%;
+        }
+
+        /* BOK 4 - OTROHET (Längst till höger, lutad kraftigt höger) */
+        .book-4 {
+          left: 70%;
+        }
+
+        .book-img {
           width: 100%;
           height: auto;
           display: block;
@@ -478,37 +513,37 @@ const Dashboard = () => {
           user-select: none;
         }
 
-        .book-overlay-text {
+        .book-text-overlay {
           position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
           text-align: center;
-          width: 70%;
+          width: 75%;
           pointer-events: none;
         }
 
-        .book-case-title {
+        .book-title {
           font-family: 'Cinzel', serif;
-          font-size: 1.6rem;
+          font-size: 1.8rem;
           font-weight: 700;
           color: #D4AF37;
           letter-spacing: 2px;
           text-transform: uppercase;
           margin-bottom: 0.5rem;
-          line-height: 1.3;
+          line-height: 1.2;
           text-shadow:
-            0 2px 6px rgba(0, 0, 0, 1),
-            0 0 20px rgba(212, 175, 55, 0.6);
+            0 3px 8px rgba(0, 0, 0, 1),
+            0 0 25px rgba(212, 175, 55, 0.7);
         }
 
-        .book-case-location {
+        .book-location {
           font-family: 'Cinzel', serif;
-          font-size: 1.1rem;
+          font-size: 1.2rem;
           color: #B89046;
           letter-spacing: 1.5px;
           text-transform: uppercase;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+          text-shadow: 0 2px 5px rgba(0, 0, 0, 1);
         }
 
         /* COMPLETED CASES */
@@ -748,16 +783,22 @@ const Dashboard = () => {
         }
 
         @media (max-width: 768px) {
-          .books-fan {
+          .books-fan-spread {
             flex-direction: column;
+            height: auto;
             gap: 2rem;
-            min-height: auto;
           }
 
-          .book-card {
+          .book-item {
             position: relative !important;
-            transform: none !important;
-            margin: 1rem 0;
+            left: auto !important;
+            width: 80% !important;
+            max-width: 300px;
+            margin: 0 auto;
+          }
+
+          .book-1, .book-2, .book-3, .book-4 {
+            left: auto !important;
           }
 
           .footer-buttons {
