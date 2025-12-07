@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { Eye } from 'lucide-react';
 import { Howl } from 'howler';
+import { Player } from '@lottiefiles/react-lottie-player';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -73,20 +74,14 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-black/70" />
       </div>
 
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none z-[2]">
-        {/* Street Lamp Glows */}
-        <div className="street-lamp-glow" style={{ top: '20%', left: '8%' }} />
-        <div className="street-lamp-glow" style={{ top: '25%', right: '12%', animationDelay: '3s' }} />
-        <div className="street-lamp-glow" style={{ bottom: '30%', left: '15%', animationDelay: '5s' }} />
-
-        {/* Apartment Window Lights */}
-        <div className="apartment-light apartment-light-1" style={{ top: '25%', left: '22%' }} />
-        <div className="apartment-light apartment-light-2" style={{ top: '30%', left: '25%' }} />
-        <div className="apartment-light apartment-light-3" style={{ top: '35%', left: '23%' }} />
-        <div className="apartment-light apartment-light-4" style={{ top: '28%', right: '28%' }} />
-        <div className="apartment-light apartment-light-1" style={{ top: '33%', right: '31%' }} />
-        <div className="apartment-light apartment-light-2" style={{ top: '40%', right: '29%' }} />
+      {/* Rain Animation */}
+      <div className="absolute inset-0 pointer-events-none z-[2] opacity-40">
+        <Player
+          autoplay
+          loop
+          src="/animations/rain.json"
+          style={{ width: '100%', height: '100%' }}
+        />
       </div>
 
       {/* Main Content */}

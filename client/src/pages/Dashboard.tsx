@@ -102,24 +102,6 @@ const Dashboard = () => {
         style={{ y: backgroundY }}
       />
 
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 pointer-events-none z-[2]">
-        {/* Street Lamp Glows - strategically placed */}
-        <div className="street-lamp-glow" style={{ top: '15%', left: '10%' }} />
-        <div className="street-lamp-glow" style={{ top: '20%', right: '15%', animationDelay: '2s' }} />
-        <div className="street-lamp-glow" style={{ bottom: '25%', left: '20%', animationDelay: '4s' }} />
-
-        {/* Apartment Window Lights - simulating building windows */}
-        <div className="apartment-light apartment-light-1" style={{ top: '30%', left: '25%' }} />
-        <div className="apartment-light apartment-light-2" style={{ top: '35%', left: '28%' }} />
-        <div className="apartment-light apartment-light-3" style={{ top: '40%', left: '26%' }} />
-        <div className="apartment-light apartment-light-4" style={{ top: '32%', right: '30%' }} />
-        <div className="apartment-light apartment-light-1" style={{ top: '38%', right: '33%' }} />
-        <div className="apartment-light apartment-light-2" style={{ top: '45%', right: '31%' }} />
-        <div className="apartment-light apartment-light-3" style={{ top: '28%', left: '70%' }} />
-        <div className="apartment-light apartment-light-4" style={{ top: '42%', left: '68%' }} />
-      </div>
-
       {/* Vignette overlay */}
       <div className="dashboard-vignette" />
 
