@@ -77,27 +77,8 @@ namespace ConsoleDetective.API.Controllers
                 // Spara i databas
                 var savedCase = await _caseService.CreateCaseAsync(userId, generatedCase);
 
-                // Generera TTS narration direkt (i bakgrunden)
-                try
-                {
-                    var narrationText = $"{savedCase.Category}. {savedCase.Description}";
-                    var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
-
-                    if (audioBytes != null && audioBytes.Length > 0)
-                    {
-                        await _caseService.SaveNarrationAudioAsync(savedCase.Id, audioBytes);
-                        _logger.LogInformation("TTS narration genererad för case {CaseId}", savedCase.Id);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("TTS returnerade null för case {CaseId}, fortsätter utan ljud", savedCase.Id);
-                    }
-                }
-                catch (Exception ttsEx)
-                {
-                    // Om TTS misslyckas, fortsätt ändå (icke-kritiskt)
-                    _logger.LogWarning(ttsEx, "Kunde inte generera TTS för case {CaseId}", savedCase.Id);
-                }
+                // TTS genereras lazy via GET /api/case/{caseId}/narration när användaren spelar ljudet
+                _logger.LogInformation("Fall skapat utan TTS (genereras lazy vid uppspelning) - Case {CaseId}", savedCase.Id);
 
                 _logger.LogInformation(
                     "Nytt fall genererat: {CaseId} för användare {UserId}",
@@ -140,23 +121,8 @@ namespace ConsoleDetective.API.Controllers
                 // Spara ledtråd
                 var savedClue = await _caseService.AddClueAsync(caseId, clue);
 
-                // Generera TTS för ledtråden i bakgrunden (fire-and-forget)
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var audioBytes = await _ttsService.GenerateSpeechAsync(savedClue.Text);
-                        if (audioBytes != null && audioBytes.Length > 0)
-                        {
-                            await _caseService.SaveClueAudioAsync(savedClue.Id, audioBytes);
-                            _logger.LogInformation("TTS genererad för clue {ClueId}", savedClue.Id);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Kunde inte generera TTS för clue {ClueId}", savedClue.Id);
-                    }
-                });
+                // TTS genereras lazy via GET /api/case/clues/{clueId}/audio när användaren spelar ljudet
+                _logger.LogInformation("Ledtråd skapad utan TTS (genereras lazy vid uppspelning) - Clue {ClueId}", savedClue.Id);
 
                 // Mappa till DTO för att undvika circular reference
                 var clueDto = new ClueDto
