@@ -202,9 +202,9 @@ const Dashboard = () => {
                             const totalCases = activeCases.length;
                             const centerIndex = (totalCases - 1) / 2;
                             const offsetFromCenter = idx - centerIndex;
-                            const rotationDeg = offsetFromCenter * 12; // 12 grader per bok
-                            const offsetX = offsetFromCenter * 80; // 80px horisontell offset
-                            const offsetY = Math.abs(offsetFromCenter) * 20; // Böjning uppåt
+                            const rotationDeg = offsetFromCenter * 6; // 6 grader per bok (mindre rotation)
+                            const offsetX = offsetFromCenter * 200; // 200px horisontell offset (mer space)
+                            const offsetY = Math.abs(offsetFromCenter) * 10; // Mindre böjning uppåt
 
                             return (
                               <motion.div
@@ -453,8 +453,8 @@ const Dashboard = () => {
         .books-fan {
           position: relative;
           width: 100%;
-          max-width: 1000px;
-          min-height: 550px;
+          max-width: 1400px;
+          min-height: 600px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -462,7 +462,7 @@ const Dashboard = () => {
 
         .book-card {
           position: absolute;
-          width: 320px;
+          width: 400px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
@@ -490,7 +490,7 @@ const Dashboard = () => {
 
         .book-case-title {
           font-family: 'Cinzel', serif;
-          font-size: 1.4rem;
+          font-size: 1.6rem;
           font-weight: 700;
           color: #D4AF37;
           letter-spacing: 2px;
@@ -504,7 +504,7 @@ const Dashboard = () => {
 
         .book-case-location {
           font-family: 'Cinzel', serif;
-          font-size: 1rem;
+          font-size: 1.1rem;
           color: #B89046;
           letter-spacing: 1.5px;
           text-transform: uppercase;
