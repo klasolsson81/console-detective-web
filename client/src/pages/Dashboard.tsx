@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
 import { LeaderboardEntry } from '../types';
 import { Trophy, Star, CheckCircle, Volume2, VolumeX, DoorOpen, User, Settings, LogOut } from 'lucide-react';
+import { Howl } from 'howler';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -13,6 +14,10 @@ const Dashboard = () => {
   const [submittingScore, setSubmittingScore] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [hoveredBookId, setHoveredBookId] = useState<string | null>(null);
+
+  // Sound refs
+  const hoverSoundRef = useRef<Howl | null>(null);
 
   // Parallax effect
   const { scrollY } = useScroll();
@@ -25,6 +30,21 @@ const Dashboard = () => {
     }
     loadLeaderboard();
   }, [session, navigate]);
+
+  // Load hover sound effect
+  useEffect(() => {
+    hoverSoundRef.current = new Howl({
+      src: ['/sounds/effects/whoosh.mp3'],
+      volume: 0.3, // Subtle volume
+      preload: true
+    });
+
+    return () => {
+      if (hoverSoundRef.current) {
+        hoverSoundRef.current.unload();
+      }
+    };
+  }, []);
 
   const loadLeaderboard = async () => {
     try {
@@ -63,6 +83,14 @@ const Dashboard = () => {
       setErrorMsg('Kunde inte spara till topplistan. Försök igen.');
     } finally {
       setSubmittingScore(false);
+    }
+  };
+
+  const handleBookHover = (bookId: string) => {
+    // Only play sound if hovering a new book and not muted
+    if (hoveredBookId !== bookId && !isMuted && hoverSoundRef.current) {
+      setHoveredBookId(bookId);
+      hoverSoundRef.current.play();
     }
   };
 
@@ -224,6 +252,7 @@ const Dashboard = () => {
                                   zIndex: 50,
                                   transition: { duration: 0.3 }
                                 }}
+                                onMouseEnter={() => handleBookHover(caseItem.id)}
                                 onClick={() => navigate(`/case/${caseItem.id}`)}
                                 className={`book-item book-${idx + 1}`}
                                 style={{
