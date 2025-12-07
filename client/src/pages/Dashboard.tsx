@@ -559,12 +559,15 @@ const Dashboard = () => {
 
         .book-text-overlay {
           position: absolute;
-          top: 50%;
+          top: 60%;
           left: 50%;
           transform: translate(-50%, -50%);
           text-align: center;
-          width: 75%;
+          width: 80%;
           pointer-events: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
         .book-title {
