@@ -128,6 +128,16 @@ const Dashboard = () => {
     }
   };
 
+  // Hämta brottsplats-bild baserat på location
+  const getLocationImage = (location: string) => {
+    if (!location) return '/images/locations/unknown.jpg';
+    const normalizedName = location.toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[åä]/g, 'a')
+      .replace(/ö/g, 'o');
+    return `/images/locations/${normalizedName}.jpg`;
+  };
+
   return (
     <div className="dashboard-container">
       {/* Parallax background */}
@@ -277,10 +287,23 @@ const Dashboard = () => {
                                   }}
                                 />
 
-                                {/* TEXT OVERLAY */}
+                                {/* TEXT OVERLAY med bild */}
                                 <div className="book-text-overlay">
                                   <h3 className="book-title">{caseItem.category}</h3>
                                   <p className="book-location">{caseItem.location}</p>
+
+                                  {/* Liten brottsplats-bild */}
+                                  <div className="book-crime-scene-image">
+                                    <img
+                                      src={getLocationImage(caseItem.location)}
+                                      alt={caseItem.location}
+                                      className="w-full h-full object-cover rounded"
+                                      onError={(e) => {
+                                        console.error(`Failed to load location image: ${caseItem.location}`);
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               </motion.div>
                             );
