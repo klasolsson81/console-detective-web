@@ -75,11 +75,12 @@ const LandingPage = () => {
       </div>
 
       {/* Rain Animation */}
-      <div className="absolute inset-0 pointer-events-none z-[2] opacity-40">
+      <div className="absolute inset-0 pointer-events-none z-[2] opacity-15">
         <Player
           autoplay
           loop
           src="/animations/rain.json"
+          speed={0.5}
           style={{ width: '100%', height: '100%' }}
         />
       </div>

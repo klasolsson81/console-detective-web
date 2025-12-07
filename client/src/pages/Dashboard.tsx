@@ -451,19 +451,19 @@ const Dashboard = () => {
         .books-fan-spread {
           position: relative;
           width: 100%;
-          max-width: 1400px;
-          height: 900px;
+          max-width: 1600px;
+          height: 1000px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        /* VARJE BOK - MYCKET MYCKET STOR! 200-300% STÖRRE! */
+        /* VARJE BOK - EXTRA STORA BÖCKER! */
         .book-item {
           position: absolute;
-          width: 45%;
-          min-width: 600px;
-          max-width: 900px;
+          width: 55%;
+          min-width: 700px;
+          max-width: 1100px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
@@ -473,22 +473,22 @@ const Dashboard = () => {
 
         /* BOK 1 - MORD (Längst till vänster, lutad kraftigt vänster) */
         .book-1 {
-          left: -5%;
+          left: -8%;
         }
 
         /* BOK 2 - BANKRÅN (Lite till vänster, lite lutning vänster) */
         .book-2 {
-          left: 15%;
+          left: 12%;
         }
 
         /* BOK 3 - INBROTT (Lite till höger, lite lutning höger) */
         .book-3 {
-          left: 35%;
+          left: 32%;
         }
 
         /* BOK 4 - OTROHET (Längst till höger, lutad kraftigt höger) */
         .book-4 {
-          left: 55%;
+          left: 52%;
         }
 
         .book-img {
@@ -511,12 +511,12 @@ const Dashboard = () => {
 
         .book-title {
           font-family: 'Cinzel', serif;
-          font-size: 3.5rem;
+          font-size: 1.5rem;
           font-weight: 700;
           color: #D4AF37;
-          letter-spacing: 3px;
+          letter-spacing: 2px;
           text-transform: uppercase;
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
           line-height: 1.2;
           text-shadow:
             0 3px 8px rgba(0, 0, 0, 1),
@@ -525,9 +525,9 @@ const Dashboard = () => {
 
         .book-location {
           font-family: 'Cinzel', serif;
-          font-size: 2rem;
+          font-size: 1rem;
           color: #B89046;
-          letter-spacing: 2px;
+          letter-spacing: 1.5px;
           text-transform: uppercase;
           text-shadow: 0 2px 5px rgba(0, 0, 0, 1);
         }
