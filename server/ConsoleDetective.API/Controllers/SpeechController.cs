@@ -17,9 +17,9 @@ namespace ConsoleDetective.API.Controllers
         }
 
         /// <summary>
-        /// Genererar tal från text med ElevenLabs
+        /// Genererar tal från text med Edge-TTS (Microsoft - gratis)
         /// </summary>
-        /// <param name="request">Text och optional voice ID</param>
+        /// <param name="request">Text (VoiceId ignoreras nu)</param>
         /// <returns>MP3 audio-fil</returns>
         [HttpPost("generate")]
         public async Task<IActionResult> GenerateSpeech([FromBody] GenerateSpeechRequest request)
@@ -29,14 +29,10 @@ namespace ConsoleDetective.API.Controllers
                 if (string.IsNullOrWhiteSpace(request.Text))
                     return BadRequest(new { error = "Text får inte vara tom" });
 
-                // Om inget voiceId anges, använd Jonas (svenska rösten)
-                var voiceId = string.IsNullOrWhiteSpace(request.VoiceId)
-                    ? TextToSpeechService.SwedishVoiceJonas
-                    : request.VoiceId;
+                _logger.LogInformation("Begäran om tal-generering med Edge-TTS (längd: {Length})", request.Text.Length);
 
-                _logger.LogInformation("Begäran om tal-generering (längd: {Length})", request.Text.Length);
-
-                var audioData = await _ttsService.GenerateSpeechAsync(request.Text, voiceId);
+                // VoiceId ignoreras nu - Edge-TTS använder automatiskt svenska röster
+                var audioData = await _ttsService.GenerateSpeechAsync(request.Text);
 
                 // Om TTS misslyckades, returnera 503 Service Unavailable
                 if (audioData == null || audioData.Length == 0)
