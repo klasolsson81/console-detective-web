@@ -111,10 +111,9 @@
 
 /* Dashboard book crime scene image */
 .book-crime-scene-image {
-  position: absolute;
-  bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 80px;
+  margin-left: auto;
+  margin-right: auto;
   width: 130px;
   height: 80px;
   border-radius: 6px;
@@ -126,6 +125,6 @@
 
 .book-crime-scene-image:hover {
   border-color: rgba(212, 175, 55, 0.8);
-  transform: translateX(-50%) scale(1.05);
+  transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
 }
