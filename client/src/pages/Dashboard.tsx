@@ -244,7 +244,7 @@ const Dashboard = () => {
 
                                 {/* TEXT OVERLAY */}
                                 <div className="book-text-overlay">
-                                  <h3 className="book-title">{caseItem.title}</h3>
+                                  <h3 className="book-title">{caseItem.category}</h3>
                                   <p className="book-location">{caseItem.location}</p>
                                 </div>
                               </motion.div>
@@ -360,8 +360,8 @@ const Dashboard = () => {
           flex: 1;
           position: relative;
           z-index: 10;
-          padding: 2rem 1rem;
-          padding-bottom: 100px;
+          padding: 1rem 1rem;
+          padding-bottom: 80px;
         }
 
         .avatar-frame {
@@ -440,30 +440,30 @@ const Dashboard = () => {
 
         .books-container {
           width: 100%;
-          min-height: 1000px;
+          min-height: 650px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 3rem 0;
+          padding: 2rem 0;
           position: relative;
         }
 
         .books-fan-spread {
           position: relative;
           width: 100%;
-          max-width: 1600px;
-          height: 1000px;
+          max-width: 1400px;
+          height: 600px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        /* VARJE BOK - EXTRA STORA BÖCKER! */
+        /* VARJE BOK - LAGOM STORLEK */
         .book-item {
           position: absolute;
-          width: 55%;
-          min-width: 700px;
-          max-width: 1100px;
+          width: 38%;
+          min-width: 400px;
+          max-width: 650px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
@@ -473,22 +473,22 @@ const Dashboard = () => {
 
         /* BOK 1 - MORD (Längst till vänster, lutad kraftigt vänster) */
         .book-1 {
-          left: -8%;
+          left: 0%;
         }
 
         /* BOK 2 - BANKRÅN (Lite till vänster, lite lutning vänster) */
         .book-2 {
-          left: 12%;
+          left: 20%;
         }
 
         /* BOK 3 - INBROTT (Lite till höger, lite lutning höger) */
         .book-3 {
-          left: 32%;
+          left: 40%;
         }
 
         /* BOK 4 - OTROHET (Längst till höger, lutad kraftigt höger) */
         .book-4 {
-          left: 52%;
+          left: 60%;
         }
 
         .book-img {
@@ -751,7 +751,7 @@ const Dashboard = () => {
           }
 
           .dashboard-content {
-            padding-bottom: 100px;
+            padding-bottom: 80px;
           }
         }
       `}</style>
