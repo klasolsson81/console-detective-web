@@ -301,25 +301,10 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* TRE STORA KNAPPAR LÄNGST NER */}
-      {!allCompleted && (
-        <footer className="dashboard-footer">
-          <div className="footer-buttons">
-            <button className="footer-btn" onClick={() => alert('Profil-funktionalitet kommer snart!')}>
-              <User size={24} />
-              <span>PROFIL</span>
-            </button>
-            <button className="footer-btn" onClick={() => alert('Inställningar kommer snart!')}>
-              <Settings size={24} />
-              <span>INSTÄLLNINGAR</span>
-            </button>
-            <button className="footer-btn footer-btn-danger" onClick={handleQuit}>
-              <LogOut size={24} />
-              <span>LOGGA UT</span>
-            </button>
-          </div>
-        </footer>
-      )}
+      {/* COPYRIGHT FOOTER */}
+      <footer className="copyright-footer">
+        <p>© {new Date().getFullYear()} Console Detective. Skapad av Klas Olsson. Alla rättigheter förbehållna.</p>
+      </footer>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
@@ -376,7 +361,7 @@ const Dashboard = () => {
           position: relative;
           z-index: 10;
           padding: 2rem 1rem;
-          padding-bottom: 180px;
+          padding-bottom: 100px;
         }
 
         .avatar-frame {
@@ -473,11 +458,12 @@ const Dashboard = () => {
           justify-content: center;
         }
 
-        /* VARJE BOK - STOR OCH ABSOLUT POSITIONERAD */
+        /* VARJE BOK - MYCKET STOR OCH ABSOLUT POSITIONERAD */
         .book-item {
           position: absolute;
-          width: 28%; /* 28% av containern = STOR! */
-          max-width: 350px;
+          width: 22%; /* STÖRRE! */
+          min-width: 280px;
+          max-width: 450px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
@@ -487,22 +473,22 @@ const Dashboard = () => {
 
         /* BOK 1 - MORD (Längst till vänster, lutad kraftigt vänster) */
         .book-1 {
-          left: 5%;
+          left: 2%;
         }
 
         /* BOK 2 - BANKRÅN (Lite till vänster, lite lutning vänster) */
         .book-2 {
-          left: 25%;
+          left: 22%;
         }
 
         /* BOK 3 - INBROTT (Lite till höger, lite lutning höger) */
         .book-3 {
-          left: 48%;
+          left: 43%;
         }
 
         /* BOK 4 - OTROHET (Längst till höger, lutad kraftigt höger) */
         .book-4 {
-          left: 70%;
+          left: 65%;
         }
 
         .book-img {
@@ -711,8 +697,8 @@ const Dashboard = () => {
           border-color: #D4AF37;
         }
 
-        /* FOOTER BUTTONS */
-        .dashboard-footer {
+        /* COPYRIGHT FOOTER */
+        .copyright-footer {
           position: fixed;
           bottom: 0;
           left: 0;
@@ -720,53 +706,16 @@ const Dashboard = () => {
           z-index: 30;
           background: rgba(26, 26, 26, 0.95);
           backdrop-filter: blur(15px);
-          border-top: 2px solid rgba(212, 175, 55, 0.3);
+          border-top: 1px solid rgba(212, 175, 55, 0.2);
           padding: 1.5rem 2rem;
+          text-align: center;
         }
 
-        .footer-buttons {
-          max-width: 1200px;
-          margin: 0 auto;
-          display: flex;
-          justify-content: center;
-          gap: 2rem;
-        }
-
-        .footer-btn {
-          flex: 1;
-          max-width: 300px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 1.5rem 2rem;
-          background: rgba(212, 175, 55, 0.1);
-          border: 2px solid rgba(212, 175, 55, 0.3);
-          border-radius: 8px;
-          color: #D4AF37;
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 1.1rem;
-          letter-spacing: 2px;
-          transition: all 0.3s;
-          cursor: pointer;
-        }
-
-        .footer-btn:hover {
-          background: rgba(212, 175, 55, 0.2);
-          border-color: #D4AF37;
-          transform: translateY(-4px);
-          box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
-        }
-
-        .footer-btn-danger {
-          border-color: rgba(220, 38, 38, 0.4);
-          color: #dc2626;
-        }
-
-        .footer-btn-danger:hover {
-          background: rgba(220, 38, 38, 0.2);
-          border-color: #dc2626;
-          box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        .copyright-footer p {
+          color: rgba(212, 175, 55, 0.6);
+          font-size: 0.875rem;
+          letter-spacing: 1px;
+          margin: 0;
         }
 
         /* RESPONSIVE */
@@ -801,17 +750,8 @@ const Dashboard = () => {
             left: auto !important;
           }
 
-          .footer-buttons {
-            flex-direction: column;
-            gap: 1rem;
-          }
-
-          .footer-btn {
-            max-width: none;
-          }
-
           .dashboard-content {
-            padding-bottom: 400px;
+            padding-bottom: 100px;
           }
         }
       `}</style>
