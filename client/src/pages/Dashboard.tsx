@@ -90,6 +90,12 @@ const Dashboard = () => {
     // Only play sound if hovering a new book and not muted
     if (hoveredBookId !== bookId && !isMuted && hoverSoundRef.current) {
       setHoveredBookId(bookId);
+
+      // Stop any currently playing sound before playing new one
+      if (hoverSoundRef.current.playing()) {
+        hoverSoundRef.current.stop();
+      }
+
       hoverSoundRef.current.play();
     }
   };
