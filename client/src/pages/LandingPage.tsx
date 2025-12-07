@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { Eye } from 'lucide-react';
+import { Howl } from 'howler';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { session, endGame } = useGame();
+  const { session, endGame, isMuted } = useGame();
   const [showContent, setShowContent] = useState(false);
+  const rainSoundRef = useRef<Howl | null>(null);
 
   useEffect(() => {
     // Om man kommer till startsidan ska vi rensa gamla sessioner
@@ -25,6 +27,36 @@ const LandingPage = () => {
     return () => clearTimeout(timer);
   }, [session, navigate, endGame]);
 
+  // Load and play rain sound
+  useEffect(() => {
+    if (!rainSoundRef.current) {
+      rainSoundRef.current = new Howl({
+        src: ['/sounds/ambience/rain.mp3'],
+        loop: true,
+        volume: 0.2, // Lägre volym så bakgrundsmusiken hörs mer
+        autoplay: !isMuted
+      });
+    }
+
+    return () => {
+      if (rainSoundRef.current) {
+        rainSoundRef.current.stop();
+        rainSoundRef.current.unload();
+      }
+    };
+  }, []);
+
+  // Control rain sound based on mute state
+  useEffect(() => {
+    if (rainSoundRef.current) {
+      if (isMuted) {
+        rainSoundRef.current.pause();
+      } else {
+        rainSoundRef.current.play();
+      }
+    }
+  }, [isMuted]);
+
   const handleStartGame = () => {
     sessionStorage.removeItem('gameSession');
     navigate('/setup');
@@ -41,6 +73,21 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-black/70" />
       </div>
 
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none z-[2]">
+        {/* Street Lamp Glows */}
+        <div className="street-lamp-glow" style={{ top: '20%', left: '8%' }} />
+        <div className="street-lamp-glow" style={{ top: '25%', right: '12%', animationDelay: '3s' }} />
+        <div className="street-lamp-glow" style={{ bottom: '30%', left: '15%', animationDelay: '5s' }} />
+
+        {/* Apartment Window Lights */}
+        <div className="apartment-light apartment-light-1" style={{ top: '25%', left: '22%' }} />
+        <div className="apartment-light apartment-light-2" style={{ top: '30%', left: '25%' }} />
+        <div className="apartment-light apartment-light-3" style={{ top: '35%', left: '23%' }} />
+        <div className="apartment-light apartment-light-4" style={{ top: '28%', right: '28%' }} />
+        <div className="apartment-light apartment-light-1" style={{ top: '33%', right: '31%' }} />
+        <div className="apartment-light apartment-light-2" style={{ top: '40%', right: '29%' }} />
+      </div>
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 lg:px-8">
@@ -142,6 +189,13 @@ const LandingPage = () => {
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
         }}
       />
+
+      {/* COPYRIGHT FOOTER */}
+      <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-md border-t border-noir-accent/20 py-6 text-center">
+        <p className="text-noir-accent/60 text-sm tracking-wider">
+          © {new Date().getFullYear()} Console Detective. Skapad av Klas Olsson. Alla rättigheter förbehållna.
+        </p>
+      </footer>
     </div>
   );
 };

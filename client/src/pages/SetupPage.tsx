@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
 import { User, Brain, Music, FileText, Search } from 'lucide-react';
+import { Howl } from 'howler';
 
 const detectiveTips = [
   "Tips: Lyssna noga på vad misstänkta säger - ibland avslöjar de sig själva.",
@@ -25,7 +26,7 @@ const loadingStages = [
 
 const SetupPage = () => {
   const navigate = useNavigate();
-  const { startGame } = useGame();
+  const { startGame, isMuted } = useGame();
 
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState<'man' | 'woman'>('man');
@@ -33,6 +34,7 @@ const SetupPage = () => {
   const [progress, setProgress] = useState(0);
   const [currentTip, setCurrentTip] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
+  const rainSoundRef = useRef<Howl | null>(null);
 
   // Progress animation during loading
   useEffect(() => {
@@ -68,6 +70,36 @@ const SetupPage = () => {
     }
   }, [loading]);
 
+  // Load and play rain sound
+  useEffect(() => {
+    if (!rainSoundRef.current) {
+      rainSoundRef.current = new Howl({
+        src: ['/sounds/ambience/rain.mp3'],
+        loop: true,
+        volume: 0.2, // Lägre volym så bakgrundsmusiken hörs mer
+        autoplay: !isMuted
+      });
+    }
+
+    return () => {
+      if (rainSoundRef.current) {
+        rainSoundRef.current.stop();
+        rainSoundRef.current.unload();
+      }
+    };
+  }, []);
+
+  // Control rain sound based on mute state
+  useEffect(() => {
+    if (rainSoundRef.current) {
+      if (isMuted) {
+        rainSoundRef.current.pause();
+      } else {
+        rainSoundRef.current.play();
+      }
+    }
+  }, [isMuted]);
+
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -100,7 +132,33 @@ const SetupPage = () => {
   const CurrentStageIcon = loadingStages[currentStage]?.icon || Brain;
 
   return (
-    <div className="min-h-screen bg-noir-darkest flex items-center justify-center px-4">
+    <div className="min-h-screen bg-noir-darkest flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/images/startbackground.jpg)' }}
+      >
+        <div className="absolute inset-0 bg-black/70" />
+      </div>
+
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none z-[2]">
+        {/* Street Lamp Glows */}
+        <div className="street-lamp-glow" style={{ top: '20%', left: '8%' }} />
+        <div className="street-lamp-glow" style={{ top: '25%', right: '12%', animationDelay: '3s' }} />
+        <div className="street-lamp-glow" style={{ bottom: '30%', left: '15%', animationDelay: '5s' }} />
+
+        {/* Apartment Window Lights */}
+        <div className="apartment-light apartment-light-1" style={{ top: '25%', left: '22%' }} />
+        <div className="apartment-light apartment-light-2" style={{ top: '30%', left: '25%' }} />
+        <div className="apartment-light apartment-light-3" style={{ top: '35%', left: '23%' }} />
+        <div className="apartment-light apartment-light-4" style={{ top: '28%', right: '28%' }} />
+        <div className="apartment-light apartment-light-1" style={{ top: '33%', right: '31%' }} />
+        <div className="apartment-light apartment-light-2" style={{ top: '40%', right: '29%' }} />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 w-full flex items-center justify-center">
       {loading ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -248,6 +306,14 @@ const SetupPage = () => {
           </form>
         </motion.div>
       )}
+      </div>
+
+      {/* COPYRIGHT FOOTER */}
+      <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-md border-t border-noir-accent/20 py-6 text-center">
+        <p className="text-noir-accent/60 text-sm tracking-wider">
+          © {new Date().getFullYear()} Console Detective. Skapad av Klas Olsson. Alla rättigheter förbehållna.
+        </p>
+      </footer>
     </div>
   );
 };

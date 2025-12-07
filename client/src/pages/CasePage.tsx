@@ -488,6 +488,13 @@ const CasePage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* COPYRIGHT FOOTER */}
+      <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-md border-t border-noir-accent/20 py-6 text-center">
+        <p className="text-noir-accent/60 text-sm tracking-wider">
+          © {new Date().getFullYear()} Console Detective. Skapad av Klas Olsson. Alla rättigheter förbehållna.
+        </p>
+      </footer>
     </div>
   );
 };

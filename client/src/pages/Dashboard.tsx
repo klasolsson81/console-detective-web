@@ -102,6 +102,24 @@ const Dashboard = () => {
         style={{ y: backgroundY }}
       />
 
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-[2]">
+        {/* Street Lamp Glows - strategically placed */}
+        <div className="street-lamp-glow" style={{ top: '15%', left: '10%' }} />
+        <div className="street-lamp-glow" style={{ top: '20%', right: '15%', animationDelay: '2s' }} />
+        <div className="street-lamp-glow" style={{ bottom: '25%', left: '20%', animationDelay: '4s' }} />
+
+        {/* Apartment Window Lights - simulating building windows */}
+        <div className="apartment-light apartment-light-1" style={{ top: '30%', left: '25%' }} />
+        <div className="apartment-light apartment-light-2" style={{ top: '35%', left: '28%' }} />
+        <div className="apartment-light apartment-light-3" style={{ top: '40%', left: '26%' }} />
+        <div className="apartment-light apartment-light-4" style={{ top: '32%', right: '30%' }} />
+        <div className="apartment-light apartment-light-1" style={{ top: '38%', right: '33%' }} />
+        <div className="apartment-light apartment-light-2" style={{ top: '45%', right: '31%' }} />
+        <div className="apartment-light apartment-light-3" style={{ top: '28%', left: '70%' }} />
+        <div className="apartment-light apartment-light-4" style={{ top: '42%', left: '68%' }} />
+      </div>
+
       {/* Vignette overlay */}
       <div className="dashboard-vignette" />
 
@@ -440,7 +458,7 @@ const Dashboard = () => {
 
         .books-container {
           width: 100%;
-          min-height: 700px;
+          min-height: 1000px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -451,19 +469,19 @@ const Dashboard = () => {
         .books-fan-spread {
           position: relative;
           width: 100%;
-          max-width: 1200px;
-          height: 600px;
+          max-width: 1400px;
+          height: 900px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        /* VARJE BOK - MYCKET STOR OCH ABSOLUT POSITIONERAD */
+        /* VARJE BOK - MYCKET MYCKET STOR! 200-300% STÖRRE! */
         .book-item {
           position: absolute;
-          width: 22%; /* STÖRRE! */
-          min-width: 280px;
-          max-width: 450px;
+          width: 45%;
+          min-width: 600px;
+          max-width: 900px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
@@ -473,22 +491,22 @@ const Dashboard = () => {
 
         /* BOK 1 - MORD (Längst till vänster, lutad kraftigt vänster) */
         .book-1 {
-          left: 2%;
+          left: -5%;
         }
 
         /* BOK 2 - BANKRÅN (Lite till vänster, lite lutning vänster) */
         .book-2 {
-          left: 22%;
+          left: 15%;
         }
 
         /* BOK 3 - INBROTT (Lite till höger, lite lutning höger) */
         .book-3 {
-          left: 43%;
+          left: 35%;
         }
 
         /* BOK 4 - OTROHET (Längst till höger, lutad kraftigt höger) */
         .book-4 {
-          left: 65%;
+          left: 55%;
         }
 
         .book-img {
@@ -511,12 +529,12 @@ const Dashboard = () => {
 
         .book-title {
           font-family: 'Cinzel', serif;
-          font-size: 1.8rem;
+          font-size: 3.5rem;
           font-weight: 700;
           color: #D4AF37;
-          letter-spacing: 2px;
+          letter-spacing: 3px;
           text-transform: uppercase;
-          margin-bottom: 0.5rem;
+          margin-bottom: 1rem;
           line-height: 1.2;
           text-shadow:
             0 3px 8px rgba(0, 0, 0, 1),
@@ -525,9 +543,9 @@ const Dashboard = () => {
 
         .book-location {
           font-family: 'Cinzel', serif;
-          font-size: 1.2rem;
+          font-size: 2rem;
           color: #B89046;
-          letter-spacing: 1.5px;
+          letter-spacing: 2px;
           text-transform: uppercase;
           text-shadow: 0 2px 5px rgba(0, 0, 0, 1);
         }
