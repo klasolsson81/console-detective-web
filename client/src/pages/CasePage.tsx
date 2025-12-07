@@ -293,8 +293,13 @@ const CasePage = () => {
 
   return (
     <div className="min-h-screen bg-noir-darkest pb-24 relative overflow-hidden">
-      {/* Dark atmospheric background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-noir-darkest to-noir-darkest" />
+      {/* Office background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: 'url(/images/dashboard-office.jpg)' }}
+      />
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/70" />
 
       {/* Back button */}
       <div className="relative z-10 container mx-auto px-4 pt-4">
@@ -307,20 +312,31 @@ const CasePage = () => {
         </button>
       </div>
 
-      {/* HEADER med textur */}
+      {/* HEADER med textur - rundare hörn och tydligare text */}
       <div
         className="relative z-10 mx-auto max-w-6xl px-4 mb-8"
         style={{
           backgroundImage: 'url(/images/case_ui/header_texture.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          borderRadius: '16px',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
         }}
       >
-        <div className="py-8 px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-noir text-black tracking-wider uppercase drop-shadow-md">
+        {/* Semi-transparent overlay för bättre läsbarhet */}
+        <div className="absolute inset-0 bg-black/20 rounded-2xl" />
+
+        <div className="relative py-8 px-6 text-center">
+          <h1 className="text-4xl md:text-5xl font-noir text-white tracking-wider uppercase"
+              style={{
+                textShadow: '0 4px 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)'
+              }}>
             {caseData.title}
           </h1>
-          <p className="text-lg md:text-xl text-black/80 font-detective mt-2 tracking-wide">
+          <p className="text-lg md:text-xl text-white/90 font-detective mt-2 tracking-wide"
+             style={{
+               textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+             }}>
             {caseData.category} - {caseData.location}
           </p>
         </div>
@@ -363,28 +379,34 @@ const CasePage = () => {
                 </div>
               )}
 
-              {/* Beskrivning med läder-textur */}
+              {/* Beskrivning med läder-textur - mer utrymme och tydligare text */}
               <div
-                className="p-6 rounded-lg border-4 border-noir-accent/20 relative overflow-hidden"
+                className="p-8 rounded-lg border-4 border-noir-accent/20 relative overflow-hidden"
                 style={{
                   backgroundImage: 'url(/images/case_ui/leather_panel_stitched.png)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
               >
+                {/* Semi-transparent overlay för bättre kontrast */}
+                <div className="absolute inset-0 bg-black/30 rounded-lg" />
+
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-6">
                     {narrationSoundRef.current && (
                       <button
                         onClick={toggleNarration}
-                        className="flex items-center gap-2 bg-black/50 hover:bg-black/70 text-noir-accent px-4 py-2 rounded-lg transition-all border border-noir-accent/30"
+                        className="flex items-center gap-2 bg-black/60 hover:bg-black/80 text-noir-accent px-4 py-2 rounded-lg transition-all border border-noir-accent/40 backdrop-blur-sm"
                       >
                         {narrationPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                        <span className="text-sm">{narrationPlaying ? 'Pausera' : 'Spela upp'}</span>
+                        <span className="text-sm font-semibold">{narrationPlaying ? 'Pausera' : 'Spela upp'}</span>
                       </button>
                     )}
                   </div>
-                  <p className="text-gray-200 leading-relaxed font-detective text-lg">
+                  <p className="text-white leading-relaxed font-detective text-lg"
+                     style={{
+                       textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                     }}>
                     {caseData.description}
                   </p>
                 </div>
@@ -395,39 +417,39 @@ const CasePage = () => {
           {/* HÖGER KOLUMN - Misstänkta & Ledtrådar */}
           <div className="space-y-6">
 
-            {/* MISSTÄNKTA */}
+            {/* MISSTÄNKTA - Clean modern design */}
             <div>
-              <h2 className="text-2xl font-noir text-noir-accent uppercase tracking-wider mb-4 flex items-center gap-2">
+              <h2 className="text-2xl font-noir text-noir-accent uppercase tracking-wider mb-6 flex items-center gap-2">
                 <Users size={24} />
                 Misstänkta
               </h2>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 {caseData.possibleSuspects.map((suspect) => (
                   <button
                     key={suspect}
                     onClick={() => handleInterrogate(suspect)}
-                    className="group relative bg-noir-dark hover:bg-noir-medium border-2 border-gray-700 hover:border-noir-accent rounded-lg p-4 transition-all duration-300 transform hover:scale-105"
+                    className="group relative transition-all duration-300 transform hover:scale-110"
                   >
                     <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-600 group-hover:border-noir-accent mb-3 transition-all shadow-lg">
+                      <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-noir-accent/40 group-hover:border-noir-accent mb-3 transition-all shadow-2xl">
                         <img
                           src={getImagePath('suspects', suspect)}
                           alt={suspect}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="text-noir-accent font-noir text-lg tracking-wide">
+                      <span className="text-noir-accent font-noir text-base tracking-wide drop-shadow-lg">
                         {suspect}
                       </span>
-                      <MessageSquare className="text-gray-500 group-hover:text-noir-accent mt-2 transition-colors" size={16} />
+                      <MessageSquare className="text-noir-accent/50 group-hover:text-noir-accent mt-1 transition-colors" size={14} />
                     </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* LEDTRÅDAR */}
+            {/* LEDTRÅDAR - Modern clean design */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-noir text-noir-accent uppercase tracking-wider flex items-center gap-2">
@@ -437,7 +459,7 @@ const CasePage = () => {
                 <button
                   onClick={handleInvestigate}
                   disabled={investigating}
-                  className="bg-noir-accent hover:bg-noir-accent/80 text-black font-bold px-4 py-2 rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="bg-noir-accent hover:bg-noir-accent/90 text-black font-bold px-5 py-2 rounded-lg transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
                 >
                   <Search size={18} />
                   {investigating ? 'Undersöker...' : 'Undersök'}
@@ -450,50 +472,53 @@ const CasePage = () => {
                     <button
                       key={clue.id}
                       onClick={() => playClueAudio(clue.id)}
-                      className={`w-full bg-noir-dark border-2 p-4 rounded-lg transition-all text-left group hover:bg-noir-medium ${
+                      className={`w-full bg-gradient-to-br from-noir-dark to-noir-darker border-2 p-5 rounded-xl transition-all text-left group hover:shadow-xl ${
                         playingClueId === clue.id
-                          ? 'border-noir-accent shadow-lg shadow-noir-accent/30'
-                          : 'border-gray-700 hover:border-gray-600'
+                          ? 'border-noir-accent shadow-lg shadow-noir-accent/40 scale-[1.02]'
+                          : 'border-gray-700/50 hover:border-noir-accent/50'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-4">
                         <Search
                           className={`flex-shrink-0 mt-1 ${
                             playingClueId === clue.id
                               ? 'text-noir-accent animate-pulse'
                               : 'text-gray-500 group-hover:text-noir-accent'
                           }`}
-                          size={24}
+                          size={22}
                         />
                         <div className="flex-1">
-                          <p className="text-gray-200 font-detective text-base leading-relaxed">
+                          <p className="text-gray-100 font-detective text-base leading-relaxed"
+                             style={{
+                               textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                             }}>
                             {clue.text}
                           </p>
-                          <p className="text-sm text-gray-500 mt-2 italic">{clue.type}</p>
+                          <p className="text-xs text-gray-500 mt-2 italic uppercase tracking-wide">{clue.type}</p>
                         </div>
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 italic text-center py-8 bg-noir-dark rounded-lg border border-gray-700">
+                <p className="text-gray-400 italic text-center py-8 bg-noir-dark/50 rounded-xl border border-gray-700/50 backdrop-blur-sm">
                   Inga ledtrådar hittade än. Undersök brottsplatsen!
                 </p>
               )}
             </div>
 
-            {/* LÖS ÄRENDET KNAPP med guld-textur */}
+            {/* LÖS ÄRENDET KNAPP - Modern gold button */}
             <div className="mt-8">
               <button
                 onClick={() => setShowSolveModal(true)}
-                className="w-full py-6 rounded-lg text-2xl font-noir uppercase tracking-widest text-black hover:scale-105 transition-transform duration-300 shadow-2xl relative overflow-hidden group"
+                className="w-full py-5 rounded-xl text-xl font-noir uppercase tracking-widest text-black hover:scale-[1.02] transition-all duration-300 shadow-2xl relative overflow-hidden group"
                 style={{
                   background: 'linear-gradient(145deg, #d4af37 0%, #ffd700 50%, #d4af37 100%)',
-                  boxShadow: '0 10px 40px rgba(212,175,55,0.5), inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.3)'
+                  boxShadow: '0 10px 40px rgba(212,175,55,0.6), inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.3)'
                 }}
               >
-                <span className="relative z-10 drop-shadow-lg">LÖS ÄRENDET</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                <span className="relative z-10 drop-shadow-lg font-bold">LÖS ÄRENDET</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
               </button>
             </div>
           </div>
