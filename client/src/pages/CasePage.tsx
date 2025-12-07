@@ -312,19 +312,19 @@ const CasePage = () => {
         </button>
       </div>
 
-      {/* HEADER med textur - rundare hörn och tydligare text */}
+      {/* HEADER med textur - mycket rundare hörn */}
       <div
         className="relative z-10 mx-auto max-w-6xl px-4 mb-8"
         style={{
           backgroundImage: 'url(/images/case_ui/header_texture.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          borderRadius: '16px',
+          borderRadius: '24px',
           boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
         }}
       >
         {/* Semi-transparent overlay för bättre läsbarhet */}
-        <div className="absolute inset-0 bg-black/20 rounded-2xl" />
+        <div className="absolute inset-0 bg-black/20 rounded-3xl" />
 
         <div className="relative py-8 px-6 text-center">
           <h1 className="text-4xl md:text-5xl font-noir text-white tracking-wider uppercase"
@@ -356,7 +356,7 @@ const CasePage = () => {
 
               {/* Brottsplats-foto */}
               {caseData.location && (
-                <div className="mb-6 rounded-lg overflow-hidden border-4 border-noir-accent/30 relative shadow-2xl">
+                <div className="mb-6 rounded-2xl overflow-hidden border-4 border-noir-accent/30 relative shadow-2xl">
                   <img
                     src={getImagePath('locations', caseData.location)}
                     alt={caseData.location}
@@ -379,9 +379,9 @@ const CasePage = () => {
                 </div>
               )}
 
-              {/* Beskrivning med läder-textur - mer utrymme och tydligare text */}
+              {/* Beskrivning med läder-textur - mycket rundare och mer utrymme */}
               <div
-                className="p-8 rounded-lg border-4 border-noir-accent/20 relative overflow-hidden"
+                className="p-8 pb-12 rounded-3xl border-4 border-noir-accent/20 relative overflow-hidden"
                 style={{
                   backgroundImage: 'url(/images/case_ui/leather_panel_stitched.png)',
                   backgroundSize: 'cover',
@@ -389,21 +389,21 @@ const CasePage = () => {
                 }}
               >
                 {/* Semi-transparent overlay för bättre kontrast */}
-                <div className="absolute inset-0 bg-black/30 rounded-lg" />
+                <div className="absolute inset-0 bg-black/30 rounded-3xl" />
 
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-6">
                     {narrationSoundRef.current && (
                       <button
                         onClick={toggleNarration}
-                        className="flex items-center gap-2 bg-black/60 hover:bg-black/80 text-noir-accent px-4 py-2 rounded-lg transition-all border border-noir-accent/40 backdrop-blur-sm"
+                        className="flex items-center gap-2 bg-black/60 hover:bg-black/80 text-noir-accent px-4 py-2 rounded-xl transition-all border border-noir-accent/40 backdrop-blur-sm"
                       >
                         {narrationPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
                         <span className="text-sm font-semibold">{narrationPlaying ? 'Pausera' : 'Spela upp'}</span>
                       </button>
                     )}
                   </div>
-                  <p className="text-white leading-relaxed font-detective text-lg"
+                  <p className="text-white leading-relaxed font-detective text-lg pb-2"
                      style={{
                        textShadow: '0 2px 4px rgba(0,0,0,0.8)'
                      }}>
@@ -417,39 +417,39 @@ const CasePage = () => {
           {/* HÖGER KOLUMN - Misstänkta & Ledtrådar */}
           <div className="space-y-6">
 
-            {/* MISSTÄNKTA - Clean modern design */}
+            {/* MISSTÄNKTA - 4 i rad som exempel.png */}
             <div>
-              <h2 className="text-2xl font-noir text-noir-accent uppercase tracking-wider mb-6 flex items-center gap-2">
+              <h2 className="text-2xl font-noir text-noir-accent uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Users size={24} />
                 Misstänkta
               </h2>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-4 gap-3">
                 {caseData.possibleSuspects.map((suspect) => (
                   <button
                     key={suspect}
                     onClick={() => handleInterrogate(suspect)}
-                    className="group relative transition-all duration-300 transform hover:scale-110"
+                    className="group relative transition-all duration-300 transform hover:scale-105"
                   >
                     <div className="flex flex-col items-center">
-                      <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-noir-accent/40 group-hover:border-noir-accent mb-3 transition-all shadow-2xl">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-noir-accent/40 group-hover:border-noir-accent mb-2 transition-all shadow-xl">
                         <img
                           src={getImagePath('suspects', suspect)}
                           alt={suspect}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="text-noir-accent font-noir text-base tracking-wide drop-shadow-lg">
+                      <span className="text-noir-accent font-detective text-sm tracking-wide drop-shadow-lg">
                         {suspect}
                       </span>
-                      <MessageSquare className="text-noir-accent/50 group-hover:text-noir-accent mt-1 transition-colors" size={14} />
+                      <MessageSquare className="text-noir-accent/50 group-hover:text-noir-accent mt-1 transition-colors" size={12} />
                     </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* LEDTRÅDAR - Modern clean design */}
+            {/* LEDTRÅDAR - Mycket rundare */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-noir text-noir-accent uppercase tracking-wider flex items-center gap-2">
@@ -459,7 +459,7 @@ const CasePage = () => {
                 <button
                   onClick={handleInvestigate}
                   disabled={investigating}
-                  className="bg-noir-accent hover:bg-noir-accent/90 text-black font-bold px-5 py-2 rounded-lg transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
+                  className="bg-noir-accent hover:bg-noir-accent/90 text-black font-bold px-5 py-2 rounded-2xl transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
                 >
                   <Search size={18} />
                   {investigating ? 'Undersöker...' : 'Undersök'}
@@ -472,7 +472,7 @@ const CasePage = () => {
                     <button
                       key={clue.id}
                       onClick={() => playClueAudio(clue.id)}
-                      className={`w-full bg-gradient-to-br from-noir-dark to-noir-darker border-2 p-5 rounded-xl transition-all text-left group hover:shadow-xl ${
+                      className={`w-full bg-gradient-to-br from-noir-dark to-noir-darker border-2 p-5 rounded-2xl transition-all text-left group hover:shadow-xl ${
                         playingClueId === clue.id
                           ? 'border-noir-accent shadow-lg shadow-noir-accent/40 scale-[1.02]'
                           : 'border-gray-700/50 hover:border-noir-accent/50'
@@ -501,24 +501,29 @@ const CasePage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 italic text-center py-8 bg-noir-dark/50 rounded-xl border border-gray-700/50 backdrop-blur-sm">
+                <p className="text-gray-400 italic text-center py-8 bg-noir-dark/50 rounded-2xl border border-gray-700/50 backdrop-blur-sm">
                   Inga ledtrådar hittade än. Undersök brottsplatsen!
                 </p>
               )}
             </div>
 
-            {/* LÖS ÄRENDET KNAPP - Modern gold button */}
+            {/* LÖS ÄRENDET KNAPP - Mycket rundare med visuella effekter */}
             <div className="mt-8">
               <button
                 onClick={() => setShowSolveModal(true)}
-                className="w-full py-5 rounded-xl text-xl font-noir uppercase tracking-widest text-black hover:scale-[1.02] transition-all duration-300 shadow-2xl relative overflow-hidden group"
+                className="w-full py-5 rounded-3xl text-xl font-detective uppercase tracking-widest text-black hover:scale-[1.03] hover:shadow-[0_15px_50px_rgba(212,175,55,0.8)] transition-all duration-300 shadow-2xl relative overflow-hidden group"
                 style={{
                   background: 'linear-gradient(145deg, #d4af37 0%, #ffd700 50%, #d4af37 100%)',
-                  boxShadow: '0 10px 40px rgba(212,175,55,0.6), inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.3)'
+                  boxShadow: '0 10px 40px rgba(212,175,55,0.7), inset 0 3px 0 rgba(255,255,255,0.4), inset 0 -3px 0 rgba(0,0,0,0.4)'
                 }}
               >
-                <span className="relative z-10 drop-shadow-lg font-bold">LÖS ÄRENDET</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                <span className="relative z-10 drop-shadow-lg font-bold tracking-wider">LÖS ÄRENDET</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+                {/* Extra glow effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                     style={{
+                       background: 'radial-gradient(circle at center, rgba(255,215,0,0.3) 0%, transparent 70%)'
+                     }} />
               </button>
             </div>
           </div>
