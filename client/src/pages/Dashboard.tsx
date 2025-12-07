@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useGame } from '../contexts/GameContext';
 import { gameAPI } from '../services/api';
 import { LeaderboardEntry } from '../types';
-import { Trophy, Star, CheckCircle, Volume2, VolumeX, DoorOpen } from 'lucide-react';
+import { Trophy, Star, CheckCircle, Volume2, VolumeX, DoorOpen, User, Settings, LogOut } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -112,7 +112,7 @@ const Dashboard = () => {
                 <p className="text-3xl font-noir text-gray-100">{session.score}</p>
             </div>
 
-            {/* Nya mässing/guld-ikoner */}
+            {/* Guld-ikoner */}
             <button onClick={toggleMute} className="icon-button-gold" title={isMuted ? 'Slå på ljud' : 'Stäng av ljud'}>
               {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             </button>
@@ -124,7 +124,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="dashboard-content">
 
         {allCompleted ? (
           <motion.div
@@ -187,69 +187,76 @@ const Dashboard = () => {
 
           </motion.div>
         ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* CASE BOOKS - Böcker som mappar */}
-                <div className="lg:col-span-2">
-                    <h2 className="section-title mb-12 text-center lg:text-left">
-                      Välj ett Fall
-                    </h2>
+            <div className="main-layout">
+                {/* VÄNSTER: BOK-MAPPAR */}
+                <div className="cases-section">
+                    <h2 className="section-title">VÄLJ ETT FALL</h2>
 
-                    {/* Bok-mappar layout - Solfjäder */}
-                    <div className="case-books-container">
-                      {activeCases.length === 0 ? (
-                        <p className="text-gray-500 italic text-center">Inga aktiva fall.</p>
-                      ) : (
-                        <div className="case-books-spread">
-                          {activeCases.map((caseItem, idx) => (
-                            <motion.div
-                              key={caseItem.id}
-                              initial={{ opacity: 0, rotateZ: -20, y: 50 }}
-                              animate={{ opacity: 1, rotateZ: 0, y: 0 }}
-                              transition={{ delay: idx * 0.15, type: 'spring', stiffness: 100 }}
-                              whileHover={{
-                                y: -30,
-                                rotateZ: 0,
-                                scale: 1.1,
-                                zIndex: 10,
-                                transition: { duration: 0.3 }
-                              }}
-                              onClick={() => navigate(`/case/${caseItem.id}`)}
-                              className="case-book"
-                              style={{
-                                '--book-index': idx,
-                                '--book-rotation': `${(idx - activeCases.length / 2) * 8}deg`,
-                                '--book-offset-x': `${(idx - activeCases.length / 2) * 60}px`,
-                                '--book-offset-y': `${Math.abs(idx - activeCases.length / 2) * 15}px`,
-                              } as React.CSSProperties}
-                            >
-                              {/* Bok-bild */}
-                              <img
-                                src={getCaseBookImage(caseItem.category)}
-                                alt={caseItem.category}
-                                className="case-book-image"
-                              />
+                    {activeCases.length === 0 ? (
+                      <p className="text-gray-500 italic text-center">Inga aktiva fall.</p>
+                    ) : (
+                      <div className="books-wrapper">
+                        <div className="books-fan">
+                          {activeCases.map((caseItem, idx) => {
+                            // Beräkna rotation och position för solfjäder-effekt
+                            const totalCases = activeCases.length;
+                            const centerIndex = (totalCases - 1) / 2;
+                            const offsetFromCenter = idx - centerIndex;
+                            const rotationDeg = offsetFromCenter * 12; // 12 grader per bok
+                            const offsetX = offsetFromCenter * 80; // 80px horisontell offset
+                            const offsetY = Math.abs(offsetFromCenter) * 20; // Böjning uppåt
 
-                              {/* Text ovanpå boken */}
-                              <div className="case-book-text">
-                                <p className="case-book-category">{caseItem.category.toUpperCase()}</p>
-                                <h3 className="case-book-title">{caseItem.title}</h3>
-                                <p className="case-book-location">{caseItem.location}</p>
-                              </div>
-                            </motion.div>
-                          ))}
+                            return (
+                              <motion.div
+                                key={caseItem.id}
+                                initial={{ opacity: 0, scale: 0.8, rotateZ: -30 }}
+                                animate={{ opacity: 1, scale: 1, rotateZ: rotationDeg }}
+                                transition={{ delay: idx * 0.1, type: 'spring', stiffness: 120 }}
+                                whileHover={{
+                                  y: -40,
+                                  rotateZ: 0,
+                                  scale: 1.15,
+                                  zIndex: 20,
+                                  transition: { duration: 0.3 }
+                                }}
+                                onClick={() => navigate(`/case/${caseItem.id}`)}
+                                className="book-card"
+                                style={{
+                                  transform: `translateX(${offsetX}px) translateY(${offsetY}px) rotate(${rotationDeg}deg)`,
+                                }}
+                              >
+                                {/* BOK-BILD (BAS) */}
+                                <img
+                                  src={getCaseBookImage(caseItem.category)}
+                                  alt={caseItem.category}
+                                  className="book-image"
+                                  onError={(e) => {
+                                    console.error(`Failed to load image: ${getCaseBookImage(caseItem.category)}`);
+                                    e.currentTarget.src = '/images/casefolders/mord.png'; // Fallback
+                                  }}
+                                />
+
+                                {/* TEXT OVANPÅ BOKEN (endast Titel + Plats) */}
+                                <div className="book-overlay-text">
+                                  <h3 className="book-case-title">{caseItem.title}</h3>
+                                  <p className="book-case-location">{caseItem.location}</p>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
-                    {/* Avslutade fall - enklare lista */}
+                    {/* Avslutade fall */}
                     {completedCases.length > 0 && (
-                        <div className="mt-16">
+                        <div className="completed-section">
                             <h2 className="section-title-muted">
-                              <CheckCircle className="text-gray-600" /> Avslutade Fall
+                              <CheckCircle className="text-gray-600" size={20} /> Avslutade Fall
                             </h2>
-                            <div className="completed-cases-list">
+                            <div className="completed-list">
                                 {completedCases.map((c) => (
-                                    <div key={c.id} className="completed-case-item">
+                                    <div key={c.id} className="completed-item">
                                         <span className="text-gray-500 font-noir">{c.title}</span>
                                         <span className={`status-badge ${c.isSolved ? 'solved' : 'failed'}`}>
                                             {c.isSolved ? 'LÖST' : 'MISSLYCKAT'}
@@ -261,30 +268,52 @@ const Dashboard = () => {
                     )}
                 </div>
 
-                {/* LEADERBOARD - Glass morphism design */}
-                <div className="space-y-8">
+                {/* HÖGER: TOPPLISTA */}
+                <div className="sidebar">
                     <div className="leaderboard-glass">
                         <h3 className="text-xl font-noir text-noir-accent mb-4 flex items-center gap-2">
                           <Trophy size={20} /> Topplista
                         </h3>
                         <div className="space-y-3">
-                            {leaderboard.length === 0 ? <p className="text-gray-500 text-sm italic">Inga resultat än...</p> :
-                                leaderboard.map((entry, idx) => (
-                                    <div key={idx} className="leaderboard-entry-small">
-                                        <div className="flex items-center gap-3">
-                                            <span className={`rank-small ${idx < 3 ? 'top-three' : ''}`}>#{idx + 1}</span>
-                                            <span className="text-gray-300">{entry.playerName}</span>
-                                        </div>
-                                        <span className="font-noir text-noir-accent">{entry.score}</span>
+                            {leaderboard.length === 0 ? (
+                              <p className="text-gray-500 text-sm italic">Inga resultat än...</p>
+                            ) : (
+                              leaderboard.map((entry, idx) => (
+                                <div key={idx} className="leaderboard-entry-small">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`rank-small ${idx < 3 ? 'top-three' : ''}`}>#{idx + 1}</span>
+                                        <span className="text-gray-300 text-sm">{entry.playerName}</span>
                                     </div>
-                                ))
-                            }
+                                    <span className="font-noir text-noir-accent text-sm">{entry.score}</span>
+                                </div>
+                              ))
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
         )}
       </div>
+
+      {/* TRE STORA KNAPPAR LÄNGST NER */}
+      {!allCompleted && (
+        <footer className="dashboard-footer">
+          <div className="footer-buttons">
+            <button className="footer-btn" onClick={() => alert('Profil-funktionalitet kommer snart!')}>
+              <User size={24} />
+              <span>PROFIL</span>
+            </button>
+            <button className="footer-btn" onClick={() => alert('Inställningar kommer snart!')}>
+              <Settings size={24} />
+              <span>INSTÄLLNINGAR</span>
+            </button>
+            <button className="footer-btn footer-btn-danger" onClick={handleQuit}>
+              <LogOut size={24} />
+              <span>LOGGA UT</span>
+            </button>
+          </div>
+        </footer>
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
@@ -294,7 +323,8 @@ const Dashboard = () => {
           min-height: 100vh;
           background: #0A0A0A;
           position: relative;
-          overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
         }
 
         .dashboard-background {
@@ -331,6 +361,14 @@ const Dashboard = () => {
           border-bottom: 1px solid rgba(212, 175, 55, 0.2);
         }
 
+        .dashboard-content {
+          flex: 1;
+          position: relative;
+          z-index: 10;
+          padding: 2rem 1rem;
+          padding-bottom: 180px; /* Space for footer buttons */
+        }
+
         .avatar-frame {
           width: 48px;
           height: 48px;
@@ -346,7 +384,6 @@ const Dashboard = () => {
           object-fit: cover;
         }
 
-        /* Nya mässing/guld-ikoner */
         .icon-button-gold {
           color: #D4AF37;
           transition: all 0.3s;
@@ -368,18 +405,34 @@ const Dashboard = () => {
           letter-spacing: 2px;
         }
 
+        /* MAIN LAYOUT */
+        .main-layout {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1fr 350px;
+          gap: 2rem;
+        }
+
+        .cases-section {
+          position: relative;
+        }
+
         .section-title {
-          font-size: 2.5rem;
+          font-size: 3rem;
           font-family: 'Bebas Neue', sans-serif;
           color: #D4AF37;
-          letter-spacing: 3px;
-          text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+          letter-spacing: 4px;
+          text-align: center;
+          margin-bottom: 3rem;
+          text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
         }
 
         .section-title-muted {
-          font-size: 1.75rem;
+          font-size: 1.5rem;
           font-family: 'Bebas Neue', sans-serif;
           color: #A0A0A0;
+          margin-top: 4rem;
           margin-bottom: 1.5rem;
           display: flex;
           align-items: center;
@@ -387,101 +440,89 @@ const Dashboard = () => {
           letter-spacing: 2px;
         }
 
-        /* CASE BOOKS - Solfjäder layout */
-        .case-books-container {
-          min-height: 500px;
+        /* BOK-MAPPAR - SOLFJÄDER LAYOUT */
+        .books-wrapper {
+          min-height: 600px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 2rem 0;
+          padding: 3rem 0;
           position: relative;
-          z-index: 10;
         }
 
-        .case-books-spread {
+        .books-fan {
           position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 450px;
           width: 100%;
-          max-width: 900px;
+          max-width: 1000px;
+          min-height: 550px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        .case-book {
+        .book-card {
           position: absolute;
-          width: 280px;
-          height: 400px;
+          width: 320px;
+          height: auto;
           cursor: pointer;
-          transform:
-            translateX(var(--book-offset-x))
-            translateY(var(--book-offset-y))
-            rotate(var(--book-rotation));
           transform-origin: center bottom;
           transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-          filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+          filter: drop-shadow(0 15px 40px rgba(0, 0, 0, 0.6));
         }
 
-        .case-book-image {
+        .book-image {
           width: 100%;
-          height: 100%;
-          object-fit: contain;
+          height: auto;
+          display: block;
           pointer-events: none;
+          user-select: none;
         }
 
-        .case-book-text {
+        .book-overlay-text {
           position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
           text-align: center;
-          width: 75%;
+          width: 70%;
           pointer-events: none;
         }
 
-        .case-book-category {
+        .book-case-title {
           font-family: 'Cinzel', serif;
-          font-size: 0.7rem;
-          font-weight: 600;
+          font-size: 1.4rem;
+          font-weight: 700;
           color: #D4AF37;
           letter-spacing: 2px;
           text-transform: uppercase;
           margin-bottom: 0.5rem;
-          text-shadow:
-            0 1px 2px rgba(0, 0, 0, 0.8),
-            0 0 10px rgba(212, 175, 55, 0.3);
-        }
-
-        .case-book-title {
-          font-family: 'Cinzel', serif;
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: #B89046;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          margin-bottom: 0.3rem;
           line-height: 1.3;
           text-shadow:
-            0 2px 4px rgba(0, 0, 0, 0.9),
-            0 0 15px rgba(184, 144, 70, 0.4);
+            0 2px 6px rgba(0, 0, 0, 1),
+            0 0 20px rgba(212, 175, 55, 0.6);
         }
 
-        .case-book-location {
+        .book-case-location {
           font-family: 'Cinzel', serif;
-          font-size: 0.8rem;
-          color: #8B7355;
-          letter-spacing: 1px;
-          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+          font-size: 1rem;
+          color: #B89046;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
         }
 
-        /* Completed cases - enkel lista */
-        .completed-cases-list {
+        /* COMPLETED CASES */
+        .completed-section {
+          margin-top: 4rem;
+        }
+
+        .completed-list {
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
         }
 
-        .completed-case-item {
+        .completed-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -510,7 +551,13 @@ const Dashboard = () => {
           color: #dc2626;
         }
 
-        /* LEADERBOARD - Glass morphism */
+        /* LEADERBOARD */
+        .sidebar {
+          position: sticky;
+          top: 100px;
+          height: fit-content;
+        }
+
         .leaderboard-glass {
           padding: 2rem;
           background: rgba(26, 26, 26, 0.6);
@@ -526,7 +573,7 @@ const Dashboard = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0.75rem;
+          padding: 0.75rem 0.5rem;
           border-bottom: 1px solid rgba(139, 139, 139, 0.2);
           transition: all 0.2s;
         }
@@ -544,14 +591,14 @@ const Dashboard = () => {
         .rank-number, .rank-small {
           font-family: 'Bebas Neue', sans-serif;
           font-weight: bold;
-          width: 1.5rem;
-          font-size: 1.25rem;
+          min-width: 2rem;
+          font-size: 1.1rem;
           color: #707070;
         }
 
         .rank-number.top-three, .rank-small.top-three {
           color: #D4AF37;
-          font-size: 1.5rem;
+          font-size: 1.3rem;
         }
 
         .leaderboard-avatar {
@@ -568,6 +615,7 @@ const Dashboard = () => {
           object-fit: cover;
         }
 
+        /* COMPLETION SCREEN */
         .completion-card {
           padding: 3rem;
           background: rgba(26, 26, 26, 0.9);
@@ -628,21 +676,101 @@ const Dashboard = () => {
           border-color: #D4AF37;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 1024px) {
-          .case-books-spread {
+        /* FOOTER BUTTONS */
+        .dashboard-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 30;
+          background: rgba(26, 26, 26, 0.95);
+          backdrop-filter: blur(15px);
+          border-top: 2px solid rgba(212, 175, 55, 0.3);
+          padding: 1.5rem 2rem;
+        }
+
+        .footer-buttons {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: center;
+          gap: 2rem;
+        }
+
+        .footer-btn {
+          flex: 1;
+          max-width: 300px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 1.5rem 2rem;
+          background: rgba(212, 175, 55, 0.1);
+          border: 2px solid rgba(212, 175, 55, 0.3);
+          border-radius: 8px;
+          color: #D4AF37;
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 1.1rem;
+          letter-spacing: 2px;
+          transition: all 0.3s;
+          cursor: pointer;
+        }
+
+        .footer-btn:hover {
+          background: rgba(212, 175, 55, 0.2);
+          border-color: #D4AF37;
+          transform: translateY(-4px);
+          box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+        }
+
+        .footer-btn-danger {
+          border-color: rgba(220, 38, 38, 0.4);
+          color: #dc2626;
+        }
+
+        .footer-btn-danger:hover {
+          background: rgba(220, 38, 38, 0.2);
+          border-color: #dc2626;
+          box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+          .main-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .sidebar {
+            position: relative;
+            top: 0;
+            margin-top: 3rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .books-fan {
+            flex-direction: column;
+            gap: 2rem;
+            min-height: auto;
+          }
+
+          .book-card {
+            position: relative !important;
+            transform: none !important;
+            margin: 1rem 0;
+          }
+
+          .footer-buttons {
             flex-direction: column;
             gap: 1rem;
           }
 
-          .case-book {
-            position: relative;
-            transform: none !important;
-            margin: 0.5rem 0;
+          .footer-btn {
+            max-width: none;
           }
 
-          .case-book:hover {
-            transform: scale(1.05) !important;
+          .dashboard-content {
+            padding-bottom: 400px;
           }
         }
       `}</style>
