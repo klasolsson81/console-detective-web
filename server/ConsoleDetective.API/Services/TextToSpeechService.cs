@@ -1,17 +1,23 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using RestSharp;
 
 namespace ConsoleDetective.API.Services
 {
     public class TextToSpeechService
     {
+        private readonly IConfiguration _configuration;
         private readonly ILogger<TextToSpeechService> _logger;
+        private readonly string? _apiKey;
+        private readonly RestClient _client;
 
         // In-memory cache för att undvika att generera samma text flera gånger
         private static readonly ConcurrentDictionary<string, byte[]> _audioCache = new();
 
-        // Edge-TTS svenska röster (helt gratis, inga begränsningar)
-        // Lista över flera röster som fallback om en inte fungerar
+        // ElevenLabs röster (fallback)
+        public const string FallbackVoiceAdam = "pNInz6obpgDQGcFmaJgB"; // Gratis engelsk röst
+
+        // Edge-TTS svenska röster (primärt alternativ - helt gratis)
         private static readonly string[] EdgeSwedishVoices = new[]
         {
             "sv-SE-SofieNeural",    // Primär kvinnlig svensk röst
@@ -21,11 +27,20 @@ namespace ConsoleDetective.API.Services
 
         public TextToSpeechService(IConfiguration configuration, ILogger<TextToSpeechService> logger)
         {
+            _configuration = configuration;
             _logger = logger;
+
+            // API-nyckel är optional nu - bara för fallback
+            _apiKey = configuration["ELEVENLABS_API_KEY"]
+                ?? configuration["ElevenLabs:ApiKey"];
+
+            _client = new RestClient("https://api.elevenlabs.io");
         }
 
         /// <summary>
-        /// Genererar tal från text med Edge-TTS (Microsoft - helt gratis)
+        /// Genererar tal från text med fallback-system
+        /// Tier 1: Edge-TTS (snabbt och gratis)
+        /// Tier 2: ElevenLabs (fallback om Edge-TTS misslyckas)
         /// </summary>
         /// <param name="text">Texten som ska konverteras till tal</param>
         /// <param name="voiceId">Används inte längre (för bakåtkompatibilitet)</param>
@@ -46,7 +61,7 @@ namespace ConsoleDetective.API.Services
             }
 
             // Skapa cache-nyckel baserat på text
-            var cacheKey = $"edge-tts:{text}";
+            var cacheKey = $"tts:{text}";
 
             // Kolla om vi redan har denna audio i cache
             if (_audioCache.TryGetValue(cacheKey, out var cachedAudio))
@@ -55,11 +70,12 @@ namespace ConsoleDetective.API.Services
                 return cachedAudio;
             }
 
-            // Använd Edge-TTS direkt (snabbt och gratis)
-            _logger.LogInformation("🎤 Genererar tal med Edge-TTS (gratis Microsoft TTS)");
+            // Tier 1: Försök Edge-TTS först (snabbt och gratis)
+            _logger.LogInformation("🎤 Tier 1: Försöker Edge-TTS (gratis Microsoft TTS)");
             var (edgeAudioBytes, usedVoice) = await TryGenerateWithEdgeTtsAsync(text);
             if (edgeAudioBytes != null)
             {
+                _logger.LogInformation("✅ Edge-TTS lyckades!");
                 // Spara i cache
                 if (_audioCache.Count < 100)
                 {
@@ -68,8 +84,29 @@ namespace ConsoleDetective.API.Services
                 return edgeAudioBytes;
             }
 
+            // Tier 2: Fallback till ElevenLabs om Edge-TTS misslyckades
+            if (!string.IsNullOrEmpty(_apiKey))
+            {
+                _logger.LogWarning("⚠️ Edge-TTS misslyckades, försöker ElevenLabs fallback");
+                var elevenLabsAudio = await TryGenerateWithElevenLabsAsync(text, FallbackVoiceAdam);
+                if (elevenLabsAudio != null)
+                {
+                    _logger.LogInformation("✅ ElevenLabs fallback lyckades!");
+                    // Spara i cache
+                    if (_audioCache.Count < 100)
+                    {
+                        _audioCache.TryAdd(cacheKey, elevenLabsAudio);
+                    }
+                    return elevenLabsAudio;
+                }
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ Edge-TTS misslyckades och ingen ElevenLabs API-nyckel finns");
+            }
+
             // Inget ljud - spelet fortsätter i tyst läge
-            _logger.LogWarning("❌ TTS misslyckades för text (längd: {Length}). Spelet fortsätter utan ljud.", text.Length);
+            _logger.LogWarning("❌ Alla TTS-alternativ misslyckades för text (längd: {Length}). Spelet fortsätter utan ljud.", text.Length);
             return null;
         }
 
@@ -187,6 +224,59 @@ namespace ConsoleDetective.API.Services
                 {
                     _logger.LogWarning(ex, "Kunde inte ta bort temporära filer");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Försöker generera tal med ElevenLabs (fallback)
+        /// </summary>
+        private async Task<byte[]?> TryGenerateWithElevenLabsAsync(string text, string voiceId)
+        {
+            try
+            {
+                _logger.LogInformation("🎤 Genererar tal med ElevenLabs (voiceId: {VoiceId})", voiceId);
+
+                var request = new RestRequest($"/v1/text-to-speech/{voiceId}", Method.Post);
+                request.AddHeader("xi-api-key", _apiKey);
+                request.AddHeader("Content-Type", "application/json");
+
+                var body = new
+                {
+                    text = text,
+                    model_id = "eleven_multilingual_v2",
+                    voice_settings = new
+                    {
+                        stability = 0.5,
+                        similarity_boost = 0.75,
+                        style = 0.0,
+                        use_speaker_boost = true
+                    }
+                };
+
+                request.AddJsonBody(body);
+
+                var response = await _client.ExecuteAsync(request);
+
+                if (!response.IsSuccessful)
+                {
+                    _logger.LogWarning("⚠️ ElevenLabs misslyckades: {StatusCode} - {Content}",
+                        response.StatusCode, response.Content);
+                    return null;
+                }
+
+                if (response.RawBytes == null || response.RawBytes.Length == 0)
+                {
+                    _logger.LogWarning("⚠️ ElevenLabs returnerade tom audio-data");
+                    return null;
+                }
+
+                _logger.LogInformation("✅ Tal genererat med ElevenLabs ({Size} bytes)", response.RawBytes.Length);
+                return response.RawBytes;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Exception vid generering av tal med ElevenLabs");
+                return null;
             }
         }
 
