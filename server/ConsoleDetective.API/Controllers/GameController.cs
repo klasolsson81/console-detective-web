@@ -40,82 +40,17 @@ namespace ConsoleDetective.API.Controllers
                 var newCase = await _caseService.CreateCaseAsync("guest-user", data);
                 savedCases.Add(newCase);
 
-                // Generera TTS narration för detta specifika case
-                try
-                {
-                    var narrationText = $"{newCase.Category}. {newCase.Description}";
-                    var audioBytes = await _ttsService.GenerateSpeechAsync(narrationText);
-
-                    // Spara bara om TTS lyckades
-                    if (audioBytes != null && audioBytes.Length > 0)
-                    {
-                        await _caseService.SaveNarrationAudioAsync(newCase.Id, audioBytes);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"⚠️ TTS returnerade null för case {newCase.Id}, spelet fortsätter utan ljud");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"⚠️ TTS-generering för case {newCase.Id} misslyckades: {ex.Message}");
-                }
-
-                // Generera TTS för alla initiala ledtrådar
-                foreach (var clue in newCase.Clues)
-                {
-                    try
-                    {
-                        var clueAudioBytes = await _ttsService.GenerateSpeechAsync(clue.Text);
-
-                        if (clueAudioBytes != null && clueAudioBytes.Length > 0)
-                        {
-                            await _caseService.SaveClueAudioAsync(clue.Id, clueAudioBytes);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"⚠️ TTS returnerade null för clue {clue.Id}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"⚠️ TTS-generering för clue {clue.Id} misslyckades: {ex.Message}");
-                    }
-                }
+                // TTS genereras lazy via GET endpoints när användaren faktiskt spelar ljudet
+                // Detta förbättrar laddningstiden dramatiskt (30-40 sekunder istället för 100+)
             }
 
-            // Generera narration audio för alla case descriptions
-            string? narrationAudioBase64 = null;
-            try
-            {
-                // Kombinera alla beskrivningar till en narration
-                var introText = "Fyra nya fall har rapporterats. ";
-                var descriptionsText = string.Join(" ... ", savedCases.Select(c => $"{c.Category}: {c.Description}"));
-                var fullNarration = introText + descriptionsText;
-
-                // Generera TTS audio
-                var audioBytes = await _ttsService.GenerateSpeechAsync(fullNarration);
-
-                // Konvertera till base64 bara om TTS lyckades
-                if (audioBytes != null && audioBytes.Length > 0)
-                {
-                    narrationAudioBase64 = Convert.ToBase64String(audioBytes);
-                }
-                else
-                {
-                    Console.WriteLine("⚠️ TTS returnerade null för fullständig narration, spelet fortsätter utan ljud");
-                }
-            }
-            catch (Exception ex)
-            {
-                // Om TTS misslyckas, logga men fortsätt ändå (narration är optional)
-                Console.WriteLine($"⚠️ TTS-generering misslyckades: {ex.Message}");
-            }
+            // TTS genereras lazy - ingen narration genereras här längre
+            // Varje fall har sin egen narration som genereras on-demand via GET /api/case/{caseId}/narration
 
             return Ok(new
             {
                 sessionId,
-                narrationAudio = narrationAudioBase64,
+                narrationAudio = (string?)null, // Ingen narration vid session start
                 cases = savedCases.Select(c => new {
                     c.Id,
                     c.Title,

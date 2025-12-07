@@ -34,7 +34,7 @@ const Dashboard = () => {
   // Load hover sound effect
   useEffect(() => {
     hoverSoundRef.current = new Howl({
-      src: ['/sounds/effects/whoosh.mp3'],
+      src: ['/sounds/effects/whoosh2.mp3'],
       volume: 0.3, // Subtle volume
       preload: true
     });
