@@ -150,31 +150,38 @@ const Dashboard = () => {
       <div className="dashboard-vignette" />
 
       <header className="dashboard-header">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-             <div className="avatar-frame">
-                <img src={`/images/${session.avatar || 'man'}.png`} alt="Avatar" />
-             </div>
-             <div>
-                <p className="text-gray-400 text-xs uppercase tracking-widest font-noir">Detektiv</p>
-                <p className="text-noir-accent font-noir text-lg">{session.playerName}</p>
-             </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-                <p className="text-gray-400 text-xs uppercase tracking-widest font-noir">Poäng</p>
-                <p className="text-3xl font-noir text-gray-100">{session.score}</p>
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          {/* Mobile: Stack vertically, Desktop: Side by side */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
+            {/* Left: Avatar and name */}
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
+               <div className="avatar-frame" style={{ width: '48px', height: '48px' }}>
+                  <img src={`/images/${session.avatar || 'man'}.png`} alt="Avatar" className="w-full h-full" />
+               </div>
+               <div className="text-center sm:text-left">
+                  <p className="text-gray-400 text-xs uppercase tracking-widest font-noir">Detektiv</p>
+                  <p className="text-noir-accent font-noir text-base sm:text-lg truncate max-w-[150px] sm:max-w-none">{session.playerName}</p>
+               </div>
             </div>
 
-            {/* Guld-ikoner */}
-            <button onClick={toggleMute} className="icon-button-gold" title={isMuted ? 'Slå på ljud' : 'Stäng av ljud'}>
-              {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-            </button>
+            {/* Right: Score and buttons */}
+            <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="text-center sm:text-right">
+                  <p className="text-gray-400 text-xs uppercase tracking-widest font-noir">Poäng</p>
+                  <p className="text-2xl sm:text-3xl font-noir text-gray-100">{session.score}</p>
+              </div>
 
-            <button onClick={handleQuit} className="icon-button-gold" title="Avsluta">
-              <DoorOpen size={20} />
-            </button>
+              {/* Buttons */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button onClick={toggleMute} className="icon-button-gold" title={isMuted ? 'Slå på ljud' : 'Stäng av ljud'}>
+                  {isMuted ? <VolumeX size={18} className="sm:w-5 sm:h-5" /> : <Volume2 size={18} className="sm:w-5 sm:h-5" />}
+                </button>
+
+                <button onClick={handleQuit} className="icon-button-gold" title="Avsluta">
+                  <DoorOpen size={18} className="sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -185,12 +192,12 @@ const Dashboard = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-4xl mx-auto text-center"
+            className="max-w-4xl mx-auto text-center px-4"
           >
             <div className="completion-card">
-                <Star className="text-noir-accent w-24 h-24 mx-auto mb-6 animate-pulse" />
-                <h1 className="text-5xl md:text-6xl font-noir text-noir-accent mb-4">Utredning Avslutad</h1>
-                <p className="text-xl text-gray-300 mb-8 font-detective">Bra jobbat, detektiv {session.playerName}.</p>
+                <Star className="text-noir-accent w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-4 sm:mb-6 animate-pulse" />
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-noir text-noir-accent mb-3 sm:mb-4">Utredning Avslutad</h1>
+                <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 font-detective">Bra jobbat, detektiv {session.playerName}.</p>
 
                 <div className="stats-grid">
                     <div className="stat-card">

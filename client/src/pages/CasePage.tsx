@@ -326,14 +326,14 @@ const CasePage = () => {
         {/* Semi-transparent overlay för bättre läsbarhet */}
         <div className="absolute inset-0 bg-black/20 rounded-3xl" />
 
-        <div className="relative py-8 px-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-noir text-white tracking-wider uppercase"
+        <div className="relative py-6 sm:py-8 px-4 sm:px-6 text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-noir text-white tracking-wider uppercase"
               style={{
                 textShadow: '0 4px 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)'
               }}>
             {caseData.title}
           </h1>
-          <p className="text-lg md:text-xl text-white/90 font-detective mt-2 tracking-wide"
+          <p className="text-base sm:text-lg md:text-xl text-white/90 font-detective mt-2 tracking-wide"
              style={{
                textShadow: '0 2px 4px rgba(0,0,0,0.8)'
              }}>
@@ -343,8 +343,8 @@ const CasePage = () => {
       </div>
 
       {/* MAIN CONTENT - 2 KOLUMNER */}
-      <div className="relative z-10 container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="relative z-10 container mx-auto px-3 sm:px-4 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
 
           {/* VÄNSTER KOLUMN - Ärende Detaljer */}
           <div className="space-y-6">
@@ -424,7 +424,7 @@ const CasePage = () => {
                 Misstänkta
               </h2>
 
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {caseData.possibleSuspects.map((suspect) => (
                   <button
                     key={suspect}
@@ -432,17 +432,17 @@ const CasePage = () => {
                     className="group relative transition-all duration-300 transform hover:scale-105"
                   >
                     <div className="flex flex-col items-center">
-                      <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-noir-accent/40 group-hover:border-noir-accent mb-2 transition-all shadow-xl">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-noir-accent/40 group-hover:border-noir-accent mb-2 transition-all shadow-xl">
                         <img
                           src={getImagePath('suspects', suspect)}
                           alt={suspect}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="text-noir-accent font-detective text-sm tracking-wide drop-shadow-lg">
+                      <span className="text-noir-accent font-detective text-xs sm:text-sm tracking-wide drop-shadow-lg text-center">
                         {suspect}
                       </span>
-                      <MessageSquare className="text-noir-accent/50 group-hover:text-noir-accent mt-1 transition-colors" size={12} />
+                      <MessageSquare className="text-noir-accent/50 group-hover:text-noir-accent mt-1 transition-colors" size={10} />
                     </div>
                   </button>
                 ))}

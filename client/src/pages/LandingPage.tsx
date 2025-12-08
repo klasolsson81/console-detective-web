@@ -107,9 +107,10 @@ const LandingPage = () => {
                 transition={{ delay: 0.5, type: "spring" }}
                 className="absolute -bottom-3 -right-2 sm:-bottom-4 sm:-right-4 md:-right-8"
               >
-                <span className="text-lg sm:text-2xl md:text-3xl font-noir text-red-500 animate-pulse"
+                <span className="text-lg sm:text-2xl md:text-3xl font-noir animate-pulse"
                   style={{
-                    textShadow: '0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000'
+                    color: '#00ffcc',
+                    textShadow: '0 0 10px #00ffcc, 0 0 20px #00ffcc, 0 0 30px #00ffcc, 0 0 40px #00ffcc'
                   }}
                 >
                   ONLINE
