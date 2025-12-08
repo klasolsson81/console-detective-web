@@ -483,7 +483,7 @@ const Dashboard = () => {
           color: #D4AF37;
           letter-spacing: 4px;
           text-align: center;
-          margin-bottom: 3rem;
+          margin-bottom: 1rem;
           text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
         }
 
@@ -505,11 +505,11 @@ const Dashboard = () => {
 
         .books-container {
           width: 100%;
-          min-height: 650px;
+          min-height: 500px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 2rem 0;
+          padding: 0.5rem 0;
           position: relative;
         }
 
@@ -517,7 +517,7 @@ const Dashboard = () => {
           position: relative;
           width: 100%;
           max-width: 1400px;
-          height: 600px;
+          height: 450px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -806,12 +806,16 @@ const Dashboard = () => {
 
           .books-fan-spread {
             max-width: 1200px;
-            height: 500px;
+            height: 400px;
           }
 
           .section-title {
             font-size: 2.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 0.5rem;
+          }
+
+          .books-container {
+            min-height: 400px;
           }
         }
 
