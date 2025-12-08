@@ -170,6 +170,11 @@ export const chatAPI = {
   },
   // ================
 
+  getSuggestedQuestions: async (sessionId: string) => {
+    const response = await api.get(`/chat/session/${sessionId}/suggestions`);
+    return response.data.suggestions || [];
+  },
+
   sendMessage: async (sessionId: string, message: string) => {
     const response = await api.post('/chat/ask', { sessionId, question: message });
     return response.data; // Detta returnerar nu meddelande-objektet direkt

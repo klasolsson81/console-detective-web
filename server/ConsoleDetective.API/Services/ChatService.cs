@@ -132,6 +132,32 @@ namespace ConsoleDetective.API.Services
             }).ToList();
         }
 
+        // ==================== GENERERA FRÅGEFÖRSLAG ====================
+        public async Task<List<string>> GenerateSuggestedQuestionsAsync(InterrogationSession session)
+        {
+            // Hämta konversationshistorik
+            var history = session.Messages
+                .OrderBy(m => m.Timestamp)
+                .Select(m => new ChatMessageDto
+                {
+                    Id = m.Id,
+                    Role = m.Role,
+                    Content = m.Content,
+                    Timestamp = m.Timestamp,
+                    EmotionalTone = m.EmotionalTone
+                })
+                .ToList();
+
+            // Generera frågeförslag via AI
+            var suggestions = await _aiService.GenerateSuggestedQuestionsAsync(
+                session.Case,
+                session.SuspectName,
+                history
+            );
+
+            return suggestions;
+        }
+
         // ==================== AVSLUTA SESSION ====================
         public async Task EndSessionAsync(Guid sessionId)
         {

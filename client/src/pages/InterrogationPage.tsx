@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { chatAPI } from '../services/api';
 import { ChatMessage } from '../types';
-import { ArrowLeft, Send, AlertTriangle, Loader } from 'lucide-react';
+import { ArrowLeft, Send, AlertTriangle, Loader, Sparkles } from 'lucide-react';
 
 // Helper för bilder (samma som i CasePage)
 const getImagePath = (name: string) => {
@@ -25,6 +25,8 @@ const InterrogationPage = () => {
   const [sending, setSending] = useState(false);
   const [suspectName, setSuspectName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,9 +36,12 @@ const InterrogationPage = () => {
         const sessionData = await chatAPI.getSession(sessionId);
         setSuspectName(sessionData.suspectName);
         setMessages(sessionData.messages || []);
+
+        // Fetch initial suggestions
+        await fetchSuggestions();
       } catch (error) {
         console.error("Kunde inte ladda förhör:", error);
-        navigate('/dashboard'); 
+        navigate('/dashboard');
       } finally {
         setLoading(false);
       }
@@ -53,11 +58,30 @@ const InterrogationPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || sending) return;
+  const fetchSuggestions = async () => {
+    if (!sessionId) return;
+    setLoadingSuggestions(true);
+    try {
+      const suggestions = await chatAPI.getSuggestedQuestions(sessionId);
+      setSuggestedQuestions(suggestions);
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+      setSuggestedQuestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
 
-    const userMessageContent = inputMessage;
+  const handleSuggestionClick = (question: string) => {
+    setInputMessage(question);
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent, directMessage?: string) => {
+    if (e) e.preventDefault();
+
+    const messageToSend = directMessage || inputMessage;
+    if (!messageToSend.trim() || sending) return;
+
     setInputMessage('');
     setSending(true);
 
@@ -65,13 +89,13 @@ const InterrogationPage = () => {
     const newUserMessage: ChatMessage = {
       id: tempId,
       role: 'user',
-      content: userMessageContent,
+      content: messageToSend,
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, newUserMessage]);
 
     try {
-      const response = await chatAPI.sendMessage(sessionId!, userMessageContent);
+      const response = await chatAPI.sendMessage(sessionId!, messageToSend);
       const aiMessage: ChatMessage = {
         id: response.id || (Date.now() + 1).toString(),
         role: 'assistant',
@@ -80,6 +104,9 @@ const InterrogationPage = () => {
         timestamp: response.timestamp || new Date().toISOString(),
       };
       setMessages((prev) => [...prev, aiMessage]);
+
+      // Fetch new suggestions after suspect responds
+      await fetchSuggestions();
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {
@@ -109,131 +136,185 @@ const InterrogationPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-noir-darkest flex flex-col">
-      {/* Header */}
-      <div className="bg-noir-darker border-b border-gray-800 py-3 sm:py-4 px-4 sm:px-6">
-        <div className="container mx-auto">
-          {/* Mobile: Stack vertically */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <button onClick={() => navigate(-1)} className="btn-ghost flex items-center gap-2 self-start text-sm sm:text-base">
-              <ArrowLeft size={18} className="sm:w-5 sm:h-5" /> {t('common.back')}
-            </button>
-            <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
-               {/* Liten avatar i headern */}
-               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-gray-600 flex-shrink-0">
-                  <img
-                    src={getImagePath(suspectName)}
-                    alt={suspectName}
-                    className="w-full h-full object-cover"
-                  />
-               </div>
-               <h1 className="text-lg sm:text-xl md:text-2xl font-noir text-noir-accent">
-                 Förhör: <span className="text-gray-100">{suspectName}</span>
-               </h1>
+    <div className="min-h-screen relative flex flex-col">
+      {/* Background */}
+      <div
+        className="fixed inset-0 bg-cover bg-center"
+        style={{ backgroundImage: 'url(/images/dashboard-office.jpg)' }}
+      />
+      <div className="fixed inset-0 bg-black/80" />
+
+      {/* Content Container */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Header Banner with Texture */}
+        <div className="py-6 px-4 mb-6">
+          <div className="container mx-auto max-w-4xl">
+            <div
+              className="relative px-8 py-6 rounded-2xl shadow-2xl"
+              style={{
+                backgroundImage: 'url(/images/case_ui/header_texture.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                border: '3px solid rgba(212, 175, 55, 0.4)',
+              }}
+            >
+              <div className="absolute inset-0 bg-black/40 rounded-2xl" />
+              <div className="relative z-10 flex items-center justify-between">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="text-gray-300 hover:text-noir-accent transition-colors flex items-center gap-2 text-sm"
+                >
+                  <ArrowLeft size={20} />
+                  <span className="hidden sm:inline">Tillbaka</span>
+                </button>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-noir-accent shadow-lg">
+                    <img
+                      src={getImagePath(suspectName)}
+                      alt={suspectName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-noir text-white tracking-wider uppercase"
+                      style={{ textShadow: '0 4px 8px rgba(0,0,0,0.9)' }}>
+                    <span className="text-noir-accent">FÖRHÖR:</span> {suspectName}
+                  </h1>
+                </div>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="hidden sm:block text-xs px-4 py-2 border border-noir-accent/50 text-noir-accent hover:bg-noir-accent hover:text-noir-darkest transition-all rounded"
+                >
+                  Avsluta
+                </button>
+              </div>
             </div>
-            <button onClick={() => navigate(-1)} className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 py-2 self-end sm:self-auto">
-              {t('interrogation.endInterrogation')}
-            </button>
           </div>
         </div>
-      </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto container mx-auto px-4 py-8 max-w-4xl">
-        {messages.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-noir-accent mx-auto mb-6">
-                <img 
-                  src={getImagePath(suspectName)} 
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto container mx-auto px-4 py-4 max-w-4xl">
+          {messages.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-noir-accent mx-auto mb-6 shadow-xl">
+                <img
+                  src={getImagePath(suspectName)}
                   alt={suspectName}
                   className="w-full h-full object-cover"
                 />
+              </div>
+              <p className="text-gray-300 text-lg font-detective">
+                Du står öga mot öga med {suspectName}.
+              </p>
+              <p className="text-gray-400 mt-2">Ställ din första fråga...</p>
             </div>
-            <p className="text-gray-400 text-lg">
-              Du står öga mot öga med {suspectName}.
-            </p>
-            <p className="text-gray-500 mt-2">Ställ din första fråga...</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-              >
-                {/* AVATARER I CHATTEN */}
-                <div className={`flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border flex items-center justify-center ${
-                    message.role === 'user' ? 'border-noir-accent' : 'border-gray-700'
-                  }`}>
-                  <img 
-                    src={message.role === 'user' ? '/images/logga.png' : getImagePath(suspectName)} 
-                    alt={message.role}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }} // Dölj om bild saknas
-                  />
-                </div>
-
-                <div className={`flex-1 max-w-2xl ${message.role === 'user' ? 'text-right' : ''}`}>
-                  <div className={`inline-block px-6 py-4 rounded-lg ${
-                      message.role === 'user' ? 'bg-noir-accent text-noir-darkest' : 'bg-noir-dark border border-gray-700 text-gray-100'
+          ) : (
+            <div className="space-y-6">
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                >
+                  {/* Avatar */}
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 flex items-center justify-center shadow-lg ${
+                      message.role === 'user' ? 'border-noir-accent' : 'border-gray-600'
                     }`}>
-                    <p className="leading-relaxed whitespace-pre-wrap text-left">{message.content}</p>
+                    <img
+                      src={message.role === 'user' ? '/images/logga.png' : getImagePath(suspectName)}
+                      alt={message.role}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
                   </div>
-                  {message.emotionalTone && message.role === 'assistant' && (
-                    <div className={`mt-2 text-sm flex items-center gap-1 ${getEmotionalToneColor(message.emotionalTone)}`}>
-                       {message.emotionalTone === 'nervous' || message.emotionalTone === 'defensive' ? <AlertTriangle size={12} /> : null}
-                       Tonläge: {message.emotionalTone}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-            <div ref={messagesEndRef} />
-            {sending && (
-               <div className="text-gray-500 text-sm italic ml-16 flex items-center gap-2">
-                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-75" />
-                 <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-150" />
-                 {suspectName} skriver...
-               </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Input Area */}
-      <div className="bg-noir-darker border-t border-gray-800 py-3 sm:py-4 px-4 sm:px-6">
-        <div className="container mx-auto max-w-4xl">
-          <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-4">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={`Fråga ${suspectName} något...`}
-              className="input-noir flex-1 text-sm sm:text-base md:text-lg"
-              disabled={sending}
-              autoFocus
-            />
-            <button
-              type="submit"
-              disabled={sending || !inputMessage.trim()}
-              className="btn-primary flex items-center gap-2 px-4 sm:px-6 md:px-8 disabled:opacity-50"
-            >
-              <Send size={18} className="sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline text-sm md:text-base">Skicka</span>
-            </button>
-          </form>
+                  <div className={`flex-1 max-w-2xl ${message.role === 'user' ? 'text-right' : ''}`}>
+                    <div className={`inline-block px-6 py-4 rounded-xl shadow-lg ${
+                        message.role === 'user'
+                          ? 'bg-noir-accent text-noir-darkest font-semibold'
+                          : 'bg-noir-darker/90 border border-gray-700/50 text-gray-100 backdrop-blur-sm'
+                      }`}>
+                      <p className="leading-relaxed whitespace-pre-wrap text-left">{message.content}</p>
+                    </div>
+                    {message.emotionalTone && message.role === 'assistant' && (
+                      <div className={`mt-2 text-sm flex items-center gap-1 ${getEmotionalToneColor(message.emotionalTone)}`}>
+                         {message.emotionalTone === 'nervous' || message.emotionalTone === 'defensive' ? <AlertTriangle size={12} /> : null}
+                         Tonläge: {message.emotionalTone}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+              <div ref={messagesEndRef} />
+              {sending && (
+                 <div className="text-gray-400 text-sm italic ml-16 flex items-center gap-2">
+                   <div className="w-2 h-2 bg-noir-accent rounded-full animate-bounce" />
+                   <div className="w-2 h-2 bg-noir-accent rounded-full animate-bounce delay-75" />
+                   <div className="w-2 h-2 bg-noir-accent rounded-full animate-bounce delay-150" />
+                   {suspectName} skriver...
+                 </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="bg-noir-darker/95 backdrop-blur-md border-t border-gray-700/50 py-4 px-4">
+          <div className="container mx-auto max-w-4xl">
+            {/* AI Suggested Questions */}
+            {suggestedQuestions.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles size={16} className="text-noir-accent" />
+                  <span className="text-sm text-gray-400 font-detective">Föreslagna frågor:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((question, index) => (
+                    <motion.button
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleSuggestionClick(question)}
+                      disabled={sending}
+                      className="px-4 py-2 bg-noir-darker border border-noir-accent/40 text-gray-300 text-sm rounded-lg hover:bg-noir-accent/20 hover:border-noir-accent transition-all disabled:opacity-50 text-left"
+                    >
+                      {question}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {loadingSuggestions && suggestedQuestions.length === 0 && (
+              <div className="mb-4 flex items-center gap-2 text-gray-500 text-sm">
+                <Loader size={14} className="animate-spin" />
+                <span>Genererar frågeförslag...</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSendMessage} className="flex gap-3">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder={`Fråga ${suspectName} något...`}
+                className="input-noir flex-1 text-base rounded-lg bg-noir-dark/80 border-gray-600 focus:border-noir-accent"
+                disabled={sending}
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={sending || !inputMessage.trim()}
+                className="btn-primary flex items-center gap-2 px-6 disabled:opacity-50 rounded-lg"
+              >
+                <Send size={18} />
+                <span className="hidden sm:inline">Skicka</span>
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-
-      {/* COPYRIGHT FOOTER */}
-      <footer className="fixed bottom-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-md border-t border-noir-accent/20 py-6 text-center">
-        <p className="text-noir-accent/60 text-sm tracking-wider">
-          © {new Date().getFullYear()} Console Detective. Skapad av Klas Olsson. Alla rättigheter förbehållna.
-        </p>
-      </footer>
     </div>
   );
 };

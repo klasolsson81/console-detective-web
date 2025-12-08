@@ -29,7 +29,7 @@ namespace ConsoleDetective.API.Controllers
         public async Task<ActionResult<InterrogationSessionDto>> GetSession(Guid sessionId)
         {
             var session = await _chatService.GetSessionAsync(sessionId);
-            
+
             if (session == null)
                 return NotFound(new { message = "Session hittades inte" });
 
@@ -51,6 +51,29 @@ namespace ConsoleDetective.API.Controllers
             };
 
             return Ok(sessionDto);
+        }
+
+        // === NYTT: Hämta AI-genererade frågeförslag ===
+        [HttpGet("session/{sessionId}/suggestions")]
+        public async Task<ActionResult> GetSuggestedQuestions(Guid sessionId)
+        {
+            try
+            {
+                var session = await _chatService.GetSessionAsync(sessionId);
+
+                if (session == null)
+                    return NotFound(new { message = "Session hittades inte" });
+
+                var suggestions = await _chatService.GenerateSuggestedQuestionsAsync(session);
+
+                return Ok(new { suggestions });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fel vid generering av frågeförslag");
+                // Returnera tom lista istället för error - användaren kan fortfarande skriva själv
+                return Ok(new { suggestions = new List<string>() });
+            }
         }
 
         [HttpPost("start-interrogation")]

@@ -293,7 +293,7 @@ S: {answer}
 Innehåller svaret ett KONKRET bevis eller ett starkt alibi?
 Om JA: Sammanfatta det i en kort mening.
 Om NEJ: Svara ""INGEN"".";
-            
+
             try
             {
                 var chat = _client.GetChatClient("gpt-4o-mini");
@@ -302,6 +302,156 @@ Om NEJ: Svara ""INGEN"".";
                 return result.ToUpper().Contains("INGEN") ? null : result;
             }
             catch { return null; }
+        }
+
+        /// <summary>
+        /// Genererar AI-förslag på lämpliga frågor att ställa under förhör
+        /// </summary>
+        public async Task<List<string>> GenerateSuggestedQuestionsAsync(
+            Case caseData,
+            string suspectName,
+            List<ChatMessageDto> conversationHistory)
+        {
+            // Säkerhet: Validera suspectName
+            if (!_validSuspects.Contains(suspectName))
+                throw new ArgumentException($"Ogiltig misstänkt: {suspectName}");
+
+            // Bygg kontext från senaste meddelanden
+            string conversationContext = "";
+            if (conversationHistory.Any())
+            {
+                var lastMessages = conversationHistory.TakeLast(4).ToList();
+                conversationContext = "SENASTE KONVERSATIONEN:\n" +
+                    string.Join("\n", lastMessages.Select(m =>
+                        $"{(m.Role == "user" ? "Detektiv" : suspectName)}: {m.Content}"));
+            }
+            else
+            {
+                conversationContext = "Detta är början av förhöret. Inga frågor har ställts än.";
+            }
+
+            string categoryContext = GetQuestionSuggestionContext(caseData.Category);
+
+            string prompt = $@"
+Du är en erfaren detektiv som förhör {suspectName} om följande fall:
+
+FALL: {caseData.Title}
+BESKRIVNING: {caseData.Description}
+PLATS: {caseData.Location}
+MISSTÄNKTA PERSONER: {string.Join(", ", _validSuspects)}
+
+{conversationContext}
+
+{categoryContext}
+
+UPPGIFT:
+Föreslå exakt 3 skarpa, relevanta frågor som en detektiv skulle kunna ställa härnäst.
+
+REGLER:
+- Frågorna ska vara direkta och undersökande
+- Basera dem på fallbeskrivningen och senaste konversationen
+- Om det är början: Fråga om alibi, relation till händelsen, eller vad personen såg
+- Om konversation pågår: Följ upp på misstänkta svar eller be om förtydliganden
+- Variera frågorna - inte tre varianter av samma fråga
+- Max 15 ord per fråga
+- Nämn ENDAST dessa personer: {string.Join(", ", _validSuspects)}
+- Svara ENDAST med frågorna, en per rad, inga nummer eller extra text
+
+EXEMPEL (endast stil, inte innehåll):
+Var befann du dig klockan sex på kvällen?
+Hur väl kände du offret?
+Varför sa du något annat förut?";
+
+            try
+            {
+                var chat = _client.GetChatClient("gpt-4o-mini");
+                var response = await chat.CompleteChatAsync([
+                    new SystemChatMessage("Du är en expert på förhörsteknik."),
+                    new UserChatMessage(prompt)
+                ]);
+
+                var fullResponse = string.Join("\n", response.Value.Content.Select(c => c.Text)).Trim();
+
+                // Parse frågorna - en per rad
+                var questions = fullResponse
+                    .Split('\n')
+                    .Select(q => q.Trim())
+                    .Where(q => !string.IsNullOrWhiteSpace(q))
+                    // Ta bort eventuella nummer i början (1., 2., etc.)
+                    .Select(q => System.Text.RegularExpressions.Regex.Replace(q, @"^\d+[\.\)]\s*", ""))
+                    .Where(q => q.Length > 0)
+                    .Take(3)
+                    .ToList();
+
+                return questions;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fel vid generering av frågeförslag");
+                // Returnera fallback-frågor om AI misslyckas
+                return GetFallbackQuestions(caseData.Category, conversationHistory.Any());
+            }
+        }
+
+        private string GetQuestionSuggestionContext(string category)
+        {
+            return category switch
+            {
+                "Mord" => "Detta är ett mordfall. Fråga om alibi, motiv, och vad personen såg. Kalla offret för 'offret' eller 'brottsoffret'.",
+                "Bankrån" => "Detta är ett bankrån. Fråga om var personen var, vad de såg, och om de känner till pengarna.",
+                "Inbrott" => "Detta är ett inbrott. Fråga om var personen var, vad de vet om det stulna, och om de såg något misstänkt.",
+                "Otrohet" => "Detta är ett otrohetfall. Fråga om relationen, misstänkta beteenden, och observationer. Använd termer som 'partnern' och 'relationen'.",
+                _ => "Ställ relevanta frågor baserat på fallet."
+            };
+        }
+
+        private List<string> GetFallbackQuestions(string category, bool hasConversationStarted)
+        {
+            if (!hasConversationStarted)
+            {
+                return category switch
+                {
+                    "Mord" => new List<string>
+                    {
+                        "Var befann du dig vid brottstillfället?",
+                        "Hur kände du offret?",
+                        "Såg du något misstänkt den kvällen?"
+                    },
+                    "Bankrån" => new List<string>
+                    {
+                        "Var befann du dig när rånet inträffade?",
+                        "Vad vet du om de stulna pengarna?",
+                        "Har du något alibi för tidpunkten?"
+                    },
+                    "Inbrott" => new List<string>
+                    {
+                        "Var var du när inbrottet skedde?",
+                        "Känner du till det som stals?",
+                        "Såg du något ovanligt?"
+                    },
+                    "Otrohet" => new List<string>
+                    {
+                        "Hur skulle du beskriva er relation?",
+                        "Har du märkt några förändringar i beteendet?",
+                        "Var var du förra fredagen?"
+                    },
+                    _ => new List<string>
+                    {
+                        "Kan du berätta vad du vet?",
+                        "Var befann du dig vid tidpunkten?",
+                        "Har du något att tillägga?"
+                    }
+                };
+            }
+            else
+            {
+                return new List<string>
+                {
+                    "Kan du förtydliga det du sa tidigare?",
+                    "Finns det något du inte har berättat?",
+                    "Varför verkar du tveksam?"
+                };
+            }
         }
 
         // === Helpers ===
