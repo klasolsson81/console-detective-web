@@ -523,12 +523,12 @@ const Dashboard = () => {
           justify-content: center;
         }
 
-        /* VARJE BOK - LAGOM STORLEK */
+        /* VARJE BOK - RESPONSIV STORLEK */
         .book-item {
           position: absolute;
-          width: 38%;
-          min-width: 400px;
-          max-width: 650px;
+          width: 28%;
+          min-width: 250px;
+          max-width: 450px;
           height: auto;
           cursor: pointer;
           transform-origin: center bottom;
@@ -787,6 +787,48 @@ const Dashboard = () => {
         }
 
         /* RESPONSIVE */
+
+        /* Extra stora skärmar (> 1920px) */
+        @media (min-width: 1921px) {
+          .book-item {
+            width: 32%;
+            max-width: 550px;
+          }
+        }
+
+        /* Laptops och mindre desktops (1366px - 1920px) */
+        @media (max-width: 1920px) {
+          .book-item {
+            width: 26%;
+            min-width: 220px;
+            max-width: 380px;
+          }
+
+          .books-fan-spread {
+            max-width: 1200px;
+            height: 500px;
+          }
+
+          .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+          }
+        }
+
+        /* Mindre laptops och tablets (1024px - 1365px) */
+        @media (max-width: 1365px) {
+          .book-item {
+            width: 24%;
+            min-width: 200px;
+            max-width: 320px;
+          }
+
+          .books-fan-spread {
+            height: 450px;
+          }
+        }
+
+        /* Tablets (768px - 1023px) */
         @media (max-width: 1200px) {
           .main-layout {
             grid-template-columns: 1fr;
@@ -799,6 +841,27 @@ const Dashboard = () => {
           }
         }
 
+        @media (max-width: 1023px) {
+          .book-item {
+            width: 28%;
+            min-width: 180px;
+            max-width: 280px;
+          }
+
+          .books-fan-spread {
+            height: 400px;
+          }
+
+          .book-title {
+            font-size: 1.2rem;
+          }
+
+          .book-location {
+            font-size: 0.85rem;
+          }
+        }
+
+        /* Mobiler och små tablets (< 768px) */
         @media (max-width: 768px) {
           .books-fan-spread {
             flex-direction: column;
@@ -809,8 +872,9 @@ const Dashboard = () => {
           .book-item {
             position: relative !important;
             left: auto !important;
-            width: 80% !important;
-            max-width: 300px;
+            width: 85% !important;
+            min-width: 200px !important;
+            max-width: 350px !important;
             margin: 0 auto;
           }
 
@@ -820,6 +884,26 @@ const Dashboard = () => {
 
           .dashboard-content {
             padding-bottom: 80px;
+          }
+
+          .section-title {
+            font-size: 2rem;
+          }
+        }
+
+        /* Extra små mobiler (< 480px) */
+        @media (max-width: 480px) {
+          .book-item {
+            width: 95% !important;
+            max-width: 280px !important;
+          }
+
+          .book-title {
+            font-size: 1rem;
+          }
+
+          .book-location {
+            font-size: 0.75rem;
           }
         }
       `}</style>

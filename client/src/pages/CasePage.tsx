@@ -344,7 +344,7 @@ const CasePage = () => {
 
       {/* MAIN CONTENT - 2 KOLUMNER */}
       <div className="relative z-10 container mx-auto px-3 sm:px-4 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
 
           {/* VÄNSTER KOLUMN - Ärende Detaljer */}
           <div className="space-y-6">
@@ -360,7 +360,7 @@ const CasePage = () => {
                   <img
                     src={getImagePath('locations', caseData.location)}
                     alt={caseData.location}
-                    className="w-full h-80 object-cover"
+                    className="w-full h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80 object-cover"
                   />
                   {/* Animation overlays based on case category */}
                   {caseData.category === 'Mord' && (
@@ -424,7 +424,7 @@ const CasePage = () => {
                 Misstänkta
               </h2>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                 {caseData.possibleSuspects.map((suspect) => (
                   <button
                     key={suspect}
@@ -432,14 +432,14 @@ const CasePage = () => {
                     className="group relative transition-all duration-300 transform hover:scale-105"
                   >
                     <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-noir-accent/40 group-hover:border-noir-accent mb-2 transition-all shadow-xl">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full overflow-hidden border-3 border-noir-accent/40 group-hover:border-noir-accent mb-2 transition-all shadow-xl">
                         <img
                           src={getImagePath('suspects', suspect)}
                           alt={suspect}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <span className="text-noir-accent font-detective text-xs sm:text-sm tracking-wide drop-shadow-lg text-center">
+                      <span className="text-noir-accent font-detective text-xs sm:text-sm tracking-wide drop-shadow-lg text-center line-clamp-2">
                         {suspect}
                       </span>
                       <MessageSquare className="text-noir-accent/50 group-hover:text-noir-accent mt-1 transition-colors" size={10} />

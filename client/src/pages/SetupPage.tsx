@@ -217,14 +217,14 @@ const SetupPage = () => {
           </p>
         </motion.div>
       ) : (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="card-noir p-8 max-w-lg w-full"
+            className="card-noir p-4 sm:p-6 md:p-8 max-w-lg w-full mx-4"
         >
           {/* Uppdaterade Rubriker enligt önskemål */}
-          <h1 className="text-4xl font-noir text-noir-accent text-center mb-2">Ny Detektiv</h1>
-          <p className="text-gray-400 text-center mb-10 font-detective text-lg">Välj din Detektiv</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-noir text-noir-accent text-center mb-2">Ny Detektiv</h1>
+          <p className="text-gray-400 text-center mb-6 sm:mb-8 md:mb-10 font-detective text-base sm:text-lg">Välj din Detektiv</p>
 
           <form onSubmit={handleStart} className="space-y-10">
             {/* Namn Input */}
@@ -245,49 +245,49 @@ const SetupPage = () => {
             </div>
 
             {/* Avatar Val med bilder */}
-            <div className="flex gap-8 justify-center">
+            <div className="flex gap-4 sm:gap-6 md:gap-8 justify-center">
                 {/* Man */}
-                <div 
+                <div
                     onClick={() => setAvatar('man')}
                     className={`cursor-pointer transition-all group relative ${avatar === 'man' ? 'scale-110' : 'opacity-50 hover:opacity-100 hover:scale-105'}`}
                 >
                     {/* Cirkel-behållare för bilden */}
-                    <div className={`w-28 h-28 rounded-full overflow-hidden border-4 transition-colors ${
-                        avatar === 'man' 
-                        ? 'border-noir-accent shadow-[0_0_20px_rgba(212,175,55,0.4)]' 
+                    <div className={`w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-4 transition-colors ${
+                        avatar === 'man'
+                        ? 'border-noir-accent shadow-[0_0_20px_rgba(212,175,55,0.4)]'
                         : 'border-gray-700 group-hover:border-gray-500'
                     }`}>
                         {/* BILDEN - med rätt sökväg och anpassning */}
-                        <img 
-                            src="/images/man.png" 
-                            alt="Man" 
-                            className="w-full h-full object-cover" 
+                        <img
+                            src="/images/man.png"
+                            alt="Man"
+                            className="w-full h-full object-cover"
                         />
                     </div>
                     {/* Text under */}
-                    <p className={`text-center mt-3 font-noir tracking-wider transition-colors ${avatar === 'man' ? 'text-noir-accent' : 'text-gray-500 group-hover:text-gray-300'}`}>MAN</p>
+                    <p className={`text-center mt-2 sm:mt-3 font-noir tracking-wider text-sm sm:text-base transition-colors ${avatar === 'man' ? 'text-noir-accent' : 'text-gray-500 group-hover:text-gray-300'}`}>MAN</p>
                 </div>
 
                 {/* Kvinna */}
-                <div 
+                <div
                     onClick={() => setAvatar('woman')}
                     className={`cursor-pointer transition-all group relative ${avatar === 'woman' ? 'scale-110' : 'opacity-50 hover:opacity-100 hover:scale-105'}`}
                 >
                     {/* Cirkel-behållare för bilden */}
-                    <div className={`w-28 h-28 rounded-full overflow-hidden border-4 transition-colors ${
-                        avatar === 'woman' 
-                        ? 'border-noir-accent shadow-[0_0_20px_rgba(212,175,55,0.4)]' 
+                    <div className={`w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-4 transition-colors ${
+                        avatar === 'woman'
+                        ? 'border-noir-accent shadow-[0_0_20px_rgba(212,175,55,0.4)]'
                         : 'border-gray-700 group-hover:border-gray-500'
                     }`}>
                         {/* BILDEN - med rätt sökväg och anpassning */}
-                        <img 
-                            src="/images/kvinna.png" 
-                            alt="Kvinna" 
-                            className="w-full h-full object-cover" 
+                        <img
+                            src="/images/kvinna.png"
+                            alt="Kvinna"
+                            className="w-full h-full object-cover"
                         />
                     </div>
                     {/* Text under */}
-                    <p className={`text-center mt-3 font-noir tracking-wider transition-colors ${avatar === 'woman' ? 'text-noir-accent' : 'text-gray-500 group-hover:text-gray-300'}`}>KVINNA</p>
+                    <p className={`text-center mt-2 sm:mt-3 font-noir tracking-wider text-sm sm:text-base transition-colors ${avatar === 'woman' ? 'text-noir-accent' : 'text-gray-500 group-hover:text-gray-300'}`}>KVINNA</p>
                 </div>
             </div>
 
