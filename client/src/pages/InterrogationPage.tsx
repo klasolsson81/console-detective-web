@@ -202,10 +202,10 @@ const InterrogationPage = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <p className="text-gray-300 text-lg font-detective">
+              <p className="text-gray-100 text-xl font-detective font-semibold">
                 Du står öga mot öga med {suspectName}.
               </p>
-              <p className="text-gray-400 mt-2">Ställ din första fråga...</p>
+              <p className="text-gray-300 mt-3 text-lg">Ställ din första fråga...</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -232,13 +232,16 @@ const InterrogationPage = () => {
                     <div className={`inline-block px-6 py-4 rounded-xl shadow-lg ${
                         message.role === 'user'
                           ? 'bg-noir-accent text-noir-darkest font-semibold'
-                          : 'bg-noir-darker/90 border border-gray-700/50 text-gray-100 backdrop-blur-sm'
+                          : 'bg-noir-darker/95 border-2 border-gray-600/50 text-gray-100 backdrop-blur-sm'
                       }`}>
-                      <p className="leading-relaxed whitespace-pre-wrap text-left">{message.content}</p>
+                      <p className="leading-relaxed whitespace-pre-wrap text-left text-lg font-detective"
+                         style={{ color: message.role === 'user' ? '#0a0a0a' : '#f3f4f6' }}>
+                        {message.content}
+                      </p>
                     </div>
                     {message.emotionalTone && message.role === 'assistant' && (
-                      <div className={`mt-2 text-sm flex items-center gap-1 ${getEmotionalToneColor(message.emotionalTone)}`}>
-                         {message.emotionalTone === 'nervous' || message.emotionalTone === 'defensive' ? <AlertTriangle size={12} /> : null}
+                      <div className={`mt-2 text-base flex items-center gap-1 font-semibold ${getEmotionalToneColor(message.emotionalTone)}`}>
+                         {message.emotionalTone === 'nervous' || message.emotionalTone === 'defensive' ? <AlertTriangle size={14} /> : null}
                          Tonläge: {message.emotionalTone}
                       </div>
                     )}
@@ -247,10 +250,10 @@ const InterrogationPage = () => {
               ))}
               <div ref={messagesEndRef} />
               {sending && (
-                 <div className="text-gray-400 text-sm italic ml-16 flex items-center gap-2">
-                   <div className="w-2 h-2 bg-noir-accent rounded-full animate-bounce" />
-                   <div className="w-2 h-2 bg-noir-accent rounded-full animate-bounce delay-75" />
-                   <div className="w-2 h-2 bg-noir-accent rounded-full animate-bounce delay-150" />
+                 <div className="text-gray-300 text-base italic ml-16 flex items-center gap-2 font-detective">
+                   <div className="w-3 h-3 bg-noir-accent rounded-full animate-bounce" />
+                   <div className="w-3 h-3 bg-noir-accent rounded-full animate-bounce delay-75" />
+                   <div className="w-3 h-3 bg-noir-accent rounded-full animate-bounce delay-150" />
                    {suspectName} skriver...
                  </div>
               )}
@@ -265,10 +268,10 @@ const InterrogationPage = () => {
             {suggestedQuestions.length > 0 && (
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={16} className="text-noir-accent" />
-                  <span className="text-sm text-gray-400 font-detective">Föreslagna frågor:</span>
+                  <Sparkles size={18} className="text-noir-accent" />
+                  <span className="text-base text-gray-300 font-detective font-semibold">Föreslagna frågor:</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {suggestedQuestions.map((question, index) => (
                     <motion.button
                       key={index}
@@ -277,7 +280,8 @@ const InterrogationPage = () => {
                       transition={{ delay: index * 0.1 }}
                       onClick={() => handleSuggestionClick(question)}
                       disabled={sending}
-                      className="px-4 py-2 bg-noir-darker border border-noir-accent/40 text-gray-300 text-sm rounded-lg hover:bg-noir-accent/20 hover:border-noir-accent transition-all disabled:opacity-50 text-left"
+                      className="px-5 py-3 bg-noir-darker/90 border-2 border-noir-accent/50 text-gray-100 text-base font-detective rounded-lg hover:bg-noir-accent/20 hover:border-noir-accent hover:scale-105 transition-all disabled:opacity-50 text-left shadow-lg"
+                      style={{ backdropFilter: 'blur(8px)' }}
                     >
                       {question}
                     </motion.button>
@@ -299,16 +303,17 @@ const InterrogationPage = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={`Fråga ${suspectName} något...`}
-                className="input-noir flex-1 text-base rounded-lg bg-noir-dark/80 border-gray-600 focus:border-noir-accent"
+                className="input-noir flex-1 text-lg font-detective rounded-lg bg-noir-dark/80 border-2 border-gray-600 focus:border-noir-accent px-5 py-3"
+                style={{ color: '#f3f4f6' }}
                 disabled={sending}
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={sending || !inputMessage.trim()}
-                className="btn-primary flex items-center gap-2 px-6 disabled:opacity-50 rounded-lg"
+                className="btn-primary flex items-center gap-2 px-8 py-3 disabled:opacity-50 rounded-lg text-base"
               >
-                <Send size={18} />
+                <Send size={20} />
                 <span className="hidden sm:inline">Skicka</span>
               </button>
             </form>

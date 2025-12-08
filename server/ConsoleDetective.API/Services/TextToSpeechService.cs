@@ -167,10 +167,24 @@ namespace ConsoleDetective.API.Services
                 using var process = new Process { StartInfo = startInfo };
                 process.Start();
 
-                var output = await process.StandardOutput.ReadToEndAsync();
-                var error = await process.StandardError.ReadToEndAsync();
+                // Lägg till timeout på 10 sekunder för Edge-TTS
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
 
-                await process.WaitForExitAsync();
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(10));
+                var processTask = process.WaitForExitAsync();
+
+                var completedTask = await Task.WhenAny(processTask, timeoutTask);
+
+                if (completedTask == timeoutTask)
+                {
+                    _logger.LogWarning("⚠️ Edge-TTS timeout (10s) för röst {Voice}, avbryter process", voice);
+                    try { process.Kill(); } catch { }
+                    return null;
+                }
+
+                var output = await outputTask;
+                var error = await errorTask;
 
                 if (!string.IsNullOrWhiteSpace(output))
                 {
